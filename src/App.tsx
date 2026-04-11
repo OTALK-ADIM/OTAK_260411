@@ -14,6 +14,51 @@ import Login from "./pages/login";
 import Signup from "./pages/signup";
 import Rules from "./pages/rules";
 import PublicProfile from "./pages/public-profile";
+import { useEffect } from "react";
+import { supabase } from "./lib/supabase";
+import { useNavigate, useLocation } from "react-router-dom";
+
+function Gatekeeper() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // 1. 로그인 안 되어 있으면 로그인 페이지로 (단, 가입 절차 중이면 제외)
+      if (!user) {
+        if (location.pathname !== "/login") navigate("/login");
+        return;
+      }
+
+      // 2. 로그인 되어 있다면 프로필 확인
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_approved")
+        .eq("id", user.id)
+        .single();
+
+      // 3. 상황별 리다이렉트
+      if (!profile) {
+        // 프로필 정보가 없으면 가입 정보 입력창으로
+        if (location.pathname !== "/onboarding") navigate("/onboarding");
+      } else if (profile.is_approved === false) {
+        // 프로필은 있는데 승인이 안 됐으면 대기 창으로
+        if (location.pathname !== "/pending") navigate("/pending");
+      } else {
+        // 모든 관문 통과! (메인으로 가거나 그대로 둠)
+        if (location.pathname === "/onboarding" || location.pathname === "/pending") {
+          navigate("/");
+        }
+      }
+    };
+
+    checkUser();
+  }, [navigate, location.pathname]);
+
+  return null; // 화면에 그리지는 않고 로직만 수행
+}
 
 export default function App() {
   const [, setLocation] = useLocation();
@@ -81,6 +126,10 @@ export default function App() {
             <Route path="/login" component={Login} />
             <Route path="/signup" component={Signup} />
             <Route path="/rules" component={Rules} />
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/pending" element={<Pending />} />
             <Route component={NotFound} />
           </Switch>
         </main>
