@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",  // 💡 "tsc -b && vite build" 에서 "tsc -b &&" 를 지웠습니다!
+    "build": "vite build",
     "lint": "eslint . --ext swc,ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
