@@ -10,7 +10,7 @@
     "strict": false,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
-    "moduleResolution": "Node",
+    "moduleResolution": "bundler", // 💡 node10 대신 bundler 사용
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
@@ -18,8 +18,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "ignoreDeprecations": "5.0" // 💡 경고 메시지 무시
   },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "include": ["src"]
 }
