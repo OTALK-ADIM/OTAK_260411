@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { supabase } from "./lib/supabase";
 
-// 페이지 컴포넌트 임포트
+// 기존 페이지들
 import Home from "./pages/home";
 import Feed from "./pages/feed";
 import Profile from "./pages/profile";
@@ -17,43 +17,46 @@ import Login from "./pages/login";
 import Signup from "./pages/signup";
 import Rules from "./pages/rules";
 import PublicProfile from "./pages/public-profile";
+
+// 추가된 페이지 (파일명 대소문자 주의: onboarding.tsx, pending.tsx)
 import Onboarding from "./pages/onboarding";
 import Pending from "./pages/pending";
 
+/**
+ * [필요한 로직만 담은 게이트키퍼]
+ * 로그인 여부와 프로필 존재 여부만 체크해서 페이지를 이동시킵니다.
+ */
 function Gatekeeper() {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    const checkUserStatus = async () => {
+    const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // 💡 [변경] 로그인이 안 된 상태라면 강제로 로그인 페이지로 보내지 않습니다.
-      // 그냥 메인 화면(Home)을 볼 수 있게 내버려 둡니다.
+      // 1. 로그인이 안 되어 있다면? 메인 화면 그대로 유지 (기존대로)
       if (!user) return;
 
-      // 2. 로그인 된 상태라면 프로필 정보 확인
+      // 2. 로그인 되어 있다면 프로필 정보 가져오기
       const { data: profile } = await supabase
         .from("profiles")
         .select("is_approved")
         .eq("id", user.id)
-        .single();
+        .maybeSingle(); // 데이터가 없어도 에러 대신 null 반환
 
       // 3. 상황별 리다이렉트
       if (!profile) {
-        // 구글 로그인은 했는데 프로필(닉네임 등)을 아직 안 만든 경우
+        // 프로필 정보가 아예 없으면 -> 가입 상세 입력창으로
         if (location !== "/onboarding") setLocation("/onboarding");
       } else if (profile.is_approved === false) {
-        // 프로필은 만들었지만 성민님이 승인을 안 해준 경우
+        // 정보는 있는데 승인이 안 됐으면 -> 대기 창으로
         if (location !== "/pending") setLocation("/pending");
       } else {
-        // 승인 완료된 유저가 가입/대기 페이지에 있다면 메인으로 이동
-        if (location === "/onboarding" || location === "/pending") {
-          setLocation("/");
-        }
+        // 승인 완료된 유저가 가입/대기 페이지에 있으면 -> 메인으로
+        if (location === "/onboarding" || location === "/pending") setLocation("/");
       }
     };
 
-    checkUserStatus();
+    checkUser();
   }, [location, setLocation]);
 
   return null;
@@ -61,8 +64,10 @@ function Gatekeeper() {
 
 function App() {
   return (
-    <div className="min-h-screen bg-black text-green-500 font-mono">
+    <>
+      {/* 화면 디자인에 영향 주지 않는 로직만 실행 */}
       <Gatekeeper />
+
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/feed" component={Feed} />
@@ -77,11 +82,14 @@ function App() {
         <Route path="/signup" component={Signup} />
         <Route path="/rules" component={Rules} />
         <Route path="/public-profile/:id" component={PublicProfile} />
+        
+        {/* 가입 및 대기 페이지 경로 */}
         <Route path="/onboarding" component={Onboarding} />
         <Route path="/pending" component={Pending} />
+
         <Route component={NotFound} />
       </Switch>
-    </div>
+    </>
   );
 }
 
