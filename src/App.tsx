@@ -30,27 +30,38 @@ function Gatekeeper() {
 
   useEffect(() => {
     const checkUserStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      console.log(":: [Gatekeeper] 체크 시작 ::");
+      
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-      // 1. [수정] 로그인 안 된 경우: 강제로 로그인 페이지로 보내지 않고 그대로 둡니다 (메인 화면 노출)
-      if (!user) return;
+      if (authError || !user) {
+        console.log(":: [Gatekeeper] 로그인 유저 없음 ::");
+        return;
+      }
 
-      // 2. 로그인 된 경우, 프로필 정보 확인
-      const { data: profile } = await supabase
+      console.log(":: [Gatekeeper] 로그인 확인됨 ->", user.email);
+
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("is_approved")
         .eq("id", user.id)
-        .maybeSingle(); // .single() 대신 .maybeSingle()을 써야 에러 없이 null을 반환합니다.
+        .maybeSingle();
 
-      // 3. 상황별 리다이렉트
+      if (profileError) {
+        console.error(":: [Gatekeeper] DB 조회 에러 ->", profileError.message);
+        return;
+      }
+
+      console.log(":: [Gatekeeper] 프로필 상태 ->", profile);
+
       if (!profile) {
-        // 프로필 데이터가 아예 없으면 -> 가입 정보 입력 페이지로
+        console.log(":: [Gatekeeper] 프로필 없음 -> /onboarding 이동 시도 ::");
         if (location !== "/onboarding") setLocation("/onboarding");
       } else if (profile.is_approved === false) {
-        // 승인이 아직 안 됐으면 -> 대기 페이지로
+        console.log(":: [Gatekeeper] 승인 대기 중 -> /pending 이동 시도 ::");
         if (location !== "/pending") setLocation("/pending");
       } else {
-        // 승인 완료된 유저가 가입/대기 페이지에 있다면 메인으로 보냄
+        console.log(":: [Gatekeeper] 승인 완료 유저 ::");
         if (location === "/onboarding" || location === "/pending") {
           setLocation("/");
         }
@@ -60,7 +71,7 @@ function Gatekeeper() {
     checkUserStatus();
   }, [location, setLocation]);
 
-  return null; 
+  return null;
 }
 
 function App() {
