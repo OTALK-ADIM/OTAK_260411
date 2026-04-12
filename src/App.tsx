@@ -1,8 +1,8 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { supabase } from "./lib/supabase";
 
-// 기존 페이지 컴포넌트들
+// 페이지 컴포넌트 임포트
 import Home from "./pages/home";
 import Feed from "./pages/feed";
 import Profile from "./pages/profile";
@@ -23,8 +23,7 @@ import Onboarding from "./pages/onboarding";
 import Pending from "./pages/pending";
 
 /**
- * Gatekeeper: 유저의 상태를 감시하여 조건에 맞지 않으면 페이지를 이동시킵니다.
- * 화면을 그리지 않고 오직 주소(URL) 제어만 담당합니다.
+ * Gatekeeper: 디자인에 영향을 주지 않고 로직만 수행합니다.
  */
 function Gatekeeper() {
   const [location, setLocation] = useLocation();
@@ -33,25 +32,25 @@ function Gatekeeper() {
     const checkUserStatus = async () => {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // 1. 로그인 안 된 경우: 메인 화면이나 로그인/회원가입 페이지는 그대로 둠
+      // 1. [수정] 로그인 안 된 경우: 강제로 로그인 페이지로 보내지 않고 그대로 둡니다 (메인 화면 노출)
       if (!user) return;
 
-      // 2. 로그인 된 경우: 프로필 정보 확인
+      // 2. 로그인 된 경우, 프로필 정보 확인
       const { data: profile } = await supabase
         .from("profiles")
         .select("is_approved")
         .eq("id", user.id)
-        .maybeSingle();
+        .maybeSingle(); // .single() 대신 .maybeSingle()을 써야 에러 없이 null을 반환합니다.
 
-      // 3. 상황별 리다이렉트 (강제 이동)
+      // 3. 상황별 리다이렉트
       if (!profile) {
-        // 프로필(닉네임 등)이 아예 없는 신규 유저 -> Onboarding으로
+        // 프로필 데이터가 아예 없으면 -> 가입 정보 입력 페이지로
         if (location !== "/onboarding") setLocation("/onboarding");
       } else if (profile.is_approved === false) {
-        // 정보는 입력했으나 승인이 아직 안 된 유저 -> Pending으로
+        // 승인이 아직 안 됐으면 -> 대기 페이지로
         if (location !== "/pending") setLocation("/pending");
       } else {
-        // 모든 승인이 완료된 유저가 가입/대기 페이지에 있다면 메인으로 보냄
+        // 승인 완료된 유저가 가입/대기 페이지에 있다면 메인으로 보냄
         if (location === "/onboarding" || location === "/pending") {
           setLocation("/");
         }
@@ -61,17 +60,16 @@ function Gatekeeper() {
     checkUserStatus();
   }, [location, setLocation]);
 
-  return null;
+  return null; 
 }
 
 function App() {
   return (
-    <>
-      {/* 게이트키퍼가 보이지 않는 곳에서 유저 상태를 관리합니다. */}
+    // 성민님이 주신 원래 디자인 태그 그대로 유지
+    <div className="min-h-screen bg-black text-green-500 font-mono">
       <Gatekeeper />
 
       <Switch>
-        {/* 기본 경로 */}
         <Route path="/" component={Home} />
         <Route path="/feed" component={Feed} />
         <Route path="/profile" component={Profile} />
@@ -86,14 +84,12 @@ function App() {
         <Route path="/rules" component={Rules} />
         <Route path="/public-profile/:id" component={PublicProfile} />
         
-        {/* 입국 심사 관련 경로 */}
         <Route path="/onboarding" component={Onboarding} />
         <Route path="/pending" component={Pending} />
 
-        {/* 404 페이지 */}
         <Route component={NotFound} />
       </Switch>
-    </>
+    </div>
   );
 }
 
