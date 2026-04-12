@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Switch, Route, useLocation, Link } from "wouter";
 import { supabase } from "./lib/supabase";
 
-// 페이지 컴포넌트 임포트
 import Home from "./pages/home";
 import Feed from "./pages/feed";
 import Profile from "./pages/profile";
@@ -36,13 +35,9 @@ function Gatekeeper() {
   return null;
 }
 
-/**
- * TerminalLayout: 비율과 컬러를 박제한 레이아웃
- */
 function TerminalLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
-  const [location, setLocation] = useLocation();
-
+  
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -52,54 +47,60 @@ function TerminalLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center overflow-x-hidden selection:bg-green-500 selection:text-black">
-      
-      {/* 1. 상단 배너 (고정 높이와 정렬) */}
-      <div className="w-full max-w-4xl px-4 pt-8">
-        <div className="border-2 border-green-500 text-green-500 font-bold p-2 text-center tracking-widest shadow-[0_0_10px_rgba(34,197,94,0.2)]">
+    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center">
+      <div className="w-full max-w-4xl px-4 flex flex-col items-center">
+        
+        {/* 상단 배너 - 박스 크기 고정 */}
+        <div className="w-full border-2 border-green-500 font-bold p-3 text-center tracking-[0.3em] mt-8 mb-4 bg-black">
           [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
         </div>
 
-        {/* 2. 상태 바 (h-12로 높이 고정하여 로그인 전후 비율 유지) */}
-        <div className="flex justify-between items-center text-[11px] h-12 px-1 border-b border-green-900 mb-8">
-          <div className="flex items-center gap-4">
-            <span className="text-green-500">SYSTEM: CONNECTED</span>
-            <div className="flex items-center">
-               <span className={user ? "text-green-500" : "text-red-600"}>
-                 USER: {user ? "ONLINE" : "OFFLINE"}
-               </span>
-               {user && <span className="ml-2 text-green-900 opacity-50 truncate max-w-[150px]">({user.email})</span>}
+        {/* 상태 바 - h-16으로 고정하여 로그인 전후 비율을 '박제'함 */}
+        <div className="w-full flex justify-between items-center h-16 border-b border-green-900/50 mb-8 px-2">
+          <div className="flex flex-col text-[10px] leading-tight justify-center">
+            <div className="flex gap-2">
+              <span className="opacity-50 text-green-700 font-bold">SYSTEM:</span>
+              <span>CONNECTED</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="opacity-50 text-green-700 font-bold">USER:</span>
+              <span className={user ? "text-green-500" : "text-red-500"}>
+                {user ? "ONLINE" : "OFFLINE"}
+              </span>
             </div>
           </div>
           
-          {user ? (
-            <button onClick={() => supabase.auth.signOut()} className="text-green-900 hover:text-green-500 transition-colors cursor-pointer">
-              [ LOGOUT ]
-            </button>
-          ) : (
-            <Link href="/login">
-              <button className="border border-green-500 px-3 py-1 text-green-500 hover:bg-green-500 hover:text-black transition-all font-bold cursor-pointer">
-                [ 로 그 인 ]
+          <div className="flex items-center gap-4">
+            {user && <span className="text-[10px] text-green-900 hidden md:block">{user.email}</span>}
+            {user ? (
+              <button onClick={() => supabase.auth.signOut()} className="text-[11px] border border-green-900 px-2 py-1 hover:bg-green-500 hover:text-black transition-all cursor-pointer">
+                [ LOGOUT ]
               </button>
-            </Link>
-          )}
+            ) : (
+              <Link href="/login">
+                <button className="border border-green-500 px-4 py-2 text-sm font-bold hover:bg-green-500 hover:text-black transition-all cursor-pointer">
+                  [ 로 그 인 ]
+                </button>
+              </Link>
+            )}
+          </div>
         </div>
+
+        {/* 메인 콘텐츠 */}
+        <main className="w-full flex flex-col items-center">
+          {children}
+        </main>
+
+        {/* 풋터 */}
+        <footer className="w-full py-12 text-center text-[10px] text-green-900 mt-20 border-t border-green-900/20">
+          V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
+        </footer>
       </div>
-
-      {/* 3. 메인 콘텐츠 영역 (중앙 정렬 강제) */}
-      <main className="w-full max-w-4xl px-4 flex flex-col items-center">
-        {children}
-      </main>
-
-      {/* 4. 하단 풋터 (위치 고정) */}
-      <footer className="w-full max-w-4xl text-center py-12 text-[10px] text-green-900 mt-auto">
-        V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
-      </footer>
     </div>
   );
 }
 
-function App() {
+export default function App() {
   return (
     <TerminalLayout>
       <Gatekeeper />
@@ -124,5 +125,3 @@ function App() {
     </TerminalLayout>
   );
 }
-
-export default App;
