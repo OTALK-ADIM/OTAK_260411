@@ -20,110 +20,87 @@ import PublicProfile from "./pages/public-profile";
 import Onboarding from "./pages/onboarding";
 import Pending from "./pages/pending";
 
-/**
- * Gatekeeper: 유저 상태를 감시하여 페이지를 이동시킵니다.
- */
 function Gatekeeper() {
   const [location, setLocation] = useLocation();
-
   useEffect(() => {
     const checkUserStatus = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_approved")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (!profile) {
-        if (location !== "/onboarding") setLocation("/onboarding");
-      } else if (profile.is_approved === false) {
-        if (location !== "/pending") setLocation("/pending");
-      } else {
-        if (location === "/onboarding" || location === "/pending") {
-          setLocation("/");
-        }
-      }
+      const { data: profile } = await supabase.from("profiles").select("is_approved").eq("id", user.id).maybeSingle();
+      if (!profile) { if (location !== "/onboarding") setLocation("/onboarding"); }
+      else if (profile.is_approved === false) { if (location !== "/pending") setLocation("/pending"); }
+      else { if (location === "/onboarding" || location === "/pending") setLocation("/"); }
     };
     checkUserStatus();
   }, [location, setLocation]);
-
   return null;
 }
 
 /**
- * TerminalLayout: 성민님의 디자인 프레임 (모든 페이지 공통)
+ * TerminalLayout: 비율과 컬러를 박제한 레이아웃
  */
 function TerminalLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    // 현재 유저 상태 체크
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    
-    // 로그인 상태 변화 감지
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
-
     return () => authListener.subscription.unsubscribe();
   }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setLocation("/");
-  };
-
   return (
-    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center p-4 w-full">
-      {/* 1. 상단 고정 배너 */}
-      <div className="border-2 border-green-500 text-green-500 font-bold p-2 text-center w-full max-w-4xl tracking-widest mt-6 mb-4">
-        [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
-      </div>
+    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center overflow-x-hidden selection:bg-green-500 selection:text-black">
+      
+      {/* 1. 상단 배너 (고정 높이와 정렬) */}
+      <div className="w-full max-w-4xl px-4 pt-8">
+        <div className="border-2 border-green-500 text-green-500 font-bold p-2 text-center tracking-widest shadow-[0_0_10px_rgba(34,197,94,0.2)]">
+          [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
+        </div>
 
-      {/* 2. 동적 상태 바 (로그인 여부에 따라 USER 상태 변경) */}
-      <div className="w-full max-w-4xl flex justify-between items-center text-[11px] mb-8 px-1">
-        <div>
-          <span className="text-green-500">SYSTEM: CONNECTED</span>
+        {/* 2. 상태 바 (h-12로 높이 고정하여 로그인 전후 비율 유지) */}
+        <div className="flex justify-between items-center text-[11px] h-12 px-1 border-b border-green-900 mb-8">
+          <div className="flex items-center gap-4">
+            <span className="text-green-500">SYSTEM: CONNECTED</span>
+            <div className="flex items-center">
+               <span className={user ? "text-green-500" : "text-red-600"}>
+                 USER: {user ? "ONLINE" : "OFFLINE"}
+               </span>
+               {user && <span className="ml-2 text-green-900 opacity-50 truncate max-w-[150px]">({user.email})</span>}
+            </div>
+          </div>
+          
           {user ? (
-            <span className="text-blue-500 ml-4">USER: ONLINE ({user.email})</span>
+            <button onClick={() => supabase.auth.signOut()} className="text-green-900 hover:text-green-500 transition-colors cursor-pointer">
+              [ LOGOUT ]
+            </button>
           ) : (
-            <span className="text-red-500 ml-4">USER: OFFLINE</span>
+            <Link href="/login">
+              <button className="border border-green-500 px-3 py-1 text-green-500 hover:bg-green-500 hover:text-black transition-all font-bold cursor-pointer">
+                [ 로 그 인 ]
+              </button>
+            </Link>
           )}
         </div>
-        
-        {user ? (
-          <button onClick={handleLogout} className="border border-green-800 text-green-800 px-3 py-1 hover:bg-green-500 hover:text-black transition-all">
-            [ LOGOUT ]
-          </button>
-        ) : (
-          <Link href="/login">
-            <button className="border border-green-500 text-green-500 font-bold px-4 py-1.5 hover:bg-green-500 hover:text-black transition-all cursor-pointer">
-              [ 로 그 인 ]
-            </button>
-          </Link>
-        )}
       </div>
 
-      {/* 3. 실제 페이지 내용 (Home, Feed 등이 여기에 들어감) */}
-      <main className="w-full max-w-4xl flex-grow">
+      {/* 3. 메인 콘텐츠 영역 (중앙 정렬 강제) */}
+      <main className="w-full max-w-4xl px-4 flex flex-col items-center">
         {children}
       </main>
 
-      {/* 4. 하단 고정 풋터 */}
-      <div className="w-full max-w-4xl text-center py-10 text-[10px] text-green-900 mt-auto">
+      {/* 4. 하단 풋터 (위치 고정) */}
+      <footer className="w-full max-w-4xl text-center py-12 text-[10px] text-green-900 mt-auto">
         V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
-      </div>
+      </footer>
     </div>
   );
 }
 
 function App() {
   return (
-    // TerminalLayout으로 모든 Route를 감싸서 디자인을 통일합니다.
     <TerminalLayout>
       <Gatekeeper />
       <Switch>

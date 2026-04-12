@@ -4,31 +4,56 @@ export default function Home() {
   const [, setLocation] = useLocation();
 
   return (
-    <div className="w-full flex flex-col gap-8 mt-4"> 
+    <div className="w-full space-y-12"> 
       
-      {/* OTALK 중앙 타이틀 박스 */}
-      <div className="border-2 border-green-500 py-10 text-center shadow-[0_0_20px_rgba(34,197,94,0.3)] bg-green-950/10">
-        <h2 className="text-4xl md:text-6xl font-bold tracking-[0.2em] mb-3 text-green-400">
+      {/* OTALK 중앙 타이틀 박스 - App.tsx의 프레임 안에서 정밀하게 배치 */}
+      <div className="border-2 border-green-500 py-12 text-center shadow-[0_0_20px_rgba(34,197,94,0.2)] bg-green-950/5 relative overflow-hidden">
+        {/* 아주 미세한 스캔라인 효과 추가 (테크니컬 아티스트 감성) */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.03),rgba(0,255,0,0.01),rgba(0,0,255,0.03))] bg-[length:100%_4px,3px_100%] pointer-events-none"></div>
+        
+        <h2 className="text-6xl md:text-7xl font-bold tracking-[0.25em] mb-4 text-green-500 drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]">
           OTALK
         </h2>
-        <div className="text-xs opacity-60 tracking-widest font-mono">NEO_GEEK_NETWORK_SYSTEM</div>
+        <div className="text-[10px] md:text-xs opacity-40 tracking-[0.4em] font-mono uppercase">
+          Neo_Geek_Network_System
+        </div>
       </div>
 
-      {/* 메인 메뉴 리스트 */}
-      <div className="flex flex-col gap-6 pl-4 md:pl-10 font-bold text-xl md:text-2xl">
-        <button onClick={() => setLocation("/rules")} className="flex items-center text-left text-green-300 hover:text-black hover:bg-green-500 transition-all w-max px-2 py-1">
-          <span className="mr-4 text-green-500">▶</span> 0. NERD_PROTOCOL (규칙)
+      {/* 메인 메뉴 리스트 - 간격과 정렬 최적화 */}
+      <div className="flex flex-col gap-8 pl-2 md:pl-12">
+        <button 
+          onClick={() => setLocation("/rules")} 
+          className="group flex items-center text-left text-green-500 hover:text-black hover:bg-green-500 transition-all w-max px-3 py-1 text-xl md:text-2xl font-bold italic"
+        >
+          <span className="mr-6 text-green-500 group-hover:text-black">▶</span> 
+          0. NERD_PROTOCOL (규칙)
         </button>
-        <button onClick={() => setLocation("/feed")} className="flex items-center text-left hover:text-black hover:bg-green-500 transition-all w-max px-2 py-1">
-          <span className="mr-4 text-green-500">▶</span> 1. 활동 모집 피드
+
+        <button 
+          onClick={() => setLocation("/feed")} 
+          className="group flex items-center text-left text-green-500 hover:text-black hover:bg-green-500 transition-all w-max px-3 py-1 text-xl md:text-2xl font-bold italic"
+        >
+          <span className="mr-6 text-green-500 group-hover:text-black">▶</span> 
+          1. 활동 모집 피드
         </button>
-        <button onClick={() => setLocation("/chat")} className="flex items-center text-left hover:text-black hover:bg-green-500 transition-all w-max px-2 py-1">
-          <span className="mr-4 invisible">▶</span> 2. 비밀 대화함 (수락전)
+
+        <button 
+          onClick={() => setLocation("/chat-list")} 
+          className="group flex items-center text-left text-green-500 hover:text-black hover:bg-green-500 transition-all w-max px-3 py-1 text-xl md:text-2xl font-bold italic"
+        >
+          <span className="mr-6 opacity-0">▶</span> 
+          2. 비밀 대화함 (수락전)
         </button>
-        <button onClick={() => setLocation("/profile")} className="flex items-center text-left hover:text-black hover:bg-green-500 transition-all w-max px-2 py-1">
-          <span className="mr-4 invisible">▶</span> 3. 나의 데이터 (프로필)
+
+        <button 
+          onClick={() => setLocation("/profile")} 
+          className="group flex items-center text-left text-green-500 hover:text-black hover:bg-green-500 transition-all w-max px-3 py-1 text-xl md:text-2xl font-bold italic"
+        >
+          <span className="mr-6 opacity-0">▶</span> 
+          3. 나의 데이터 (프로필)
         </button>
       </div>
+
     </div>
   );
 }
