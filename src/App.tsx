@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Switch, Route, useLocation, Link } from "wouter"; // 💡 여기서 한 번만 선언!
+import { Switch, Route, useLocation, Link } from "wouter";
 import { supabase } from "./lib/supabase";
 
 // 페이지 컴포넌트 임포트
@@ -21,7 +21,7 @@ import Onboarding from "./pages/onboarding";
 import Pending from "./pages/pending";
 
 /**
- * Gatekeeper: 유저 상태를 감시하여 조건부 리다이렉션을 수행합니다.
+ * Gatekeeper: 유저 상태를 감시하여 페이지를 이동시킵니다.
  */
 function Gatekeeper() {
   const [location, setLocation] = useLocation();
@@ -54,59 +54,67 @@ function Gatekeeper() {
 }
 
 /**
- * MainLayout: 성민님의 터미널 디자인을 완벽히 구현한 프레임입니다.
+ * TerminalLayout: 성민님의 디자인 프레임 (모든 페이지 공통)
  */
-function MainLayout() {
+function TerminalLayout({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<any>(null);
   const [location, setLocation] = useLocation();
 
+  useEffect(() => {
+    // 현재 유저 상태 체크
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    
+    // 로그인 상태 변화 감지
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => authListener.subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setLocation("/");
+  };
+
   return (
-    <div className="flex flex-col items-center p-4">
-      {/* 상단 배너 */}
-      <div className="border-2 border-green-500 text-green-500 font-bold p-2 text-center w-full max-w-4xl tracking-widest mt-10 mb-6">
+    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center p-4 w-full">
+      {/* 1. 상단 고정 배너 */}
+      <div className="border-2 border-green-500 text-green-500 font-bold p-2 text-center w-full max-w-4xl tracking-widest mt-6 mb-4">
         [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
       </div>
 
-      {/* USER 상태 영역 */}
-      <div className="w-full max-w-4xl flex justify-between items-center text-xs mb-8">
+      {/* 2. 동적 상태 바 (로그인 여부에 따라 USER 상태 변경) */}
+      <div className="w-full max-w-4xl flex justify-between items-center text-[11px] mb-8 px-1">
         <div>
-          <span className="text-green-500">SYSTEM: CONNECTED</span>{" "}
-          <span className="text-red-500 ml-4">USER: OFFLINE</span>
+          <span className="text-green-500">SYSTEM: CONNECTED</span>
+          {user ? (
+            <span className="text-blue-500 ml-4">USER: ONLINE ({user.email})</span>
+          ) : (
+            <span className="text-red-500 ml-4">USER: OFFLINE</span>
+          )}
         </div>
-        <Link href="/login">
-          <button className="border border-green-500 text-green-500 font-bold px-4 py-1.5 hover:bg-green-500 hover:text-black transition-colors cursor-pointer">
-            [ 로 그 인 ]
+        
+        {user ? (
+          <button onClick={handleLogout} className="border border-green-800 text-green-800 px-3 py-1 hover:bg-green-500 hover:text-black transition-all">
+            [ LOGOUT ]
           </button>
-        </Link>
+        ) : (
+          <Link href="/login">
+            <button className="border border-green-500 text-green-500 font-bold px-4 py-1.5 hover:bg-green-500 hover:text-black transition-all cursor-pointer">
+              [ 로 그 인 ]
+            </button>
+          </Link>
+        )}
       </div>
 
-      {/* 가운데 'OTALK' 네온 박스 */}
-      <div className="border-2 border-green-500 p-10 flex flex-col items-center justify-center w-full max-w-4xl mb-12 shadow-[0_0_15px_rgba(34,197,94,0.5)]">
-        <h1 className="text-7xl font-bold text-green-500 tracking-wider mb-2">OTALK</h1>
-        <p className="text-xs text-green-900">NEO_GEEK_NETWORK_SYSTEM</p>
-      </div>
+      {/* 3. 실제 페이지 내용 (Home, Feed 등이 여기에 들어감) */}
+      <main className="w-full max-w-4xl flex-grow">
+        {children}
+      </main>
 
-      {/* 메뉴 목록 영역 - 404 방지를 위해 Link 사용 */}
-      <div className="w-full max-w-4xl text-lg space-y-6">
-        <div className="flex items-center">
-          <span className="text-green-500 text-2xl mr-4">▶</span>
-          <Link href="/rules" className="hover:underline cursor-pointer">0. NERD_PROTOCOL (규칙)</Link>
-        </div>
-        <div className="flex items-center">
-          <span className="text-green-500 text-2xl mr-4">▶</span>
-          <Link href="/feed" className="hover:underline cursor-pointer">1. 활동 모집 피드</Link>
-        </div>
-        <div className="flex items-center">
-          <span className="text-green-500 text-2xl mr-4 invisible">▶</span>
-          <Link href="/chat-list" className="hover:underline ml-12 cursor-pointer">2. 비밀 대화함 (수락전)</Link>
-        </div>
-        <div className="flex items-center">
-          <span className="text-green-500 text-2xl mr-4 invisible">▶</span>
-          <Link href="/profile" className="hover:underline ml-12 cursor-pointer">3. 나의 데이터 (프로필)</Link>
-        </div>
-      </div>
-
-      {/* 맨 아래 시스템 풋터 */}
-      <div className="fixed bottom-4 text-[10px] text-green-900 w-full max-w-4xl text-center">
+      {/* 4. 하단 고정 풋터 */}
+      <div className="w-full max-w-4xl text-center py-10 text-[10px] text-green-900 mt-auto">
         V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
       </div>
     </div>
@@ -115,10 +123,11 @@ function MainLayout() {
 
 function App() {
   return (
-    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center">
+    // TerminalLayout으로 모든 Route를 감싸서 디자인을 통일합니다.
+    <TerminalLayout>
       <Gatekeeper />
       <Switch>
-        <Route path="/" component={MainLayout} />
+        <Route path="/" component={Home} />
         <Route path="/feed" component={Feed} />
         <Route path="/profile" component={Profile} />
         <Route path="/write-post" component={WritePost} />
@@ -135,7 +144,7 @@ function App() {
         <Route path="/pending" component={Pending} />
         <Route component={NotFound} />
       </Switch>
-    </div>
+    </TerminalLayout>
   );
 }
 
