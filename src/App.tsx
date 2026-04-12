@@ -19,6 +19,7 @@ import Rules from "./pages/rules";
 import PublicProfile from "./pages/public-profile";
 import Onboarding from "./pages/onboarding";
 import Pending from "./pages/pending";
+import { Switch, Route, useLocation, Link } from "wouter";
 
 /**
  * Gatekeeper: 유저 상태를 감시하여 조건부 리다이렉션을 수행합니다.
@@ -95,7 +96,24 @@ function MainLayout() {
           [ 로 그 인 ]
         </button>
       </div>
-
+      <div className="w-full max-w-4xl text-lg space-y-6">
+        <div className="flex items-center">
+          <span className="text-green-500 text-2xl mr-4">▶</span>
+          <Link href="/rules" className="hover:underline cursor-pointer">0. NERD_PROTOCOL (규칙)</Link>
+        </div>
+        <div className="flex items-center">
+          <span className="text-green-500 text-2xl mr-4">▶</span>
+          <Link href="/feed" className="hover:underline cursor-pointer">1. 활동 모집 피드</Link>
+        </div>
+        <div className="flex items-center">
+          <span className="text-green-500 text-2xl mr-4 invisible">▶</span>
+          <Link href="/chat-list" className="hover:underline ml-12 cursor-pointer">2. 비밀 대화함 (수락전)</Link>
+        </div>
+        <div className="flex items-center">
+          <span className="text-green-500 text-2xl mr-4 invisible">▶</span>
+          <Link href="/profile" className="hover:underline ml-12 cursor-pointer">3. 나의 데이터 (프로필)</Link>
+        </div>
+      </div>
       {/* 가운데 'OTALK' 네온 박스: OTALK NEO_GEEK_NETWORK_SYSTEM */}
       <div className="border-2 border-green-500 p-10 flex flex-col items-center justify-center w-full max-w-4xl mb-12 shadow-[0_0_15px_rgba(34,197,94,0.5)]">
         <h1 className="text-7xl font-bold text-green-500 tracking-wider mb-2">OTALK</h1>
