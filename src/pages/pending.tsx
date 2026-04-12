@@ -1,5 +1,5 @@
 // src/pages/pending.tsx
-export default function Pending() {
+export default function pending() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[50vh] font-mono text-green-500 p-10 border border-green-900 mx-auto mt-10 max-w-lg">
       <div className="text-4xl mb-4 animate-pulse">⚠️</div>

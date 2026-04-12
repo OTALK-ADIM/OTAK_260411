@@ -18,6 +18,7 @@ import Signup from "./pages/signup";
 import Rules from "./pages/rules";
 import PublicProfile from "./pages/public-profile";
 
+
 // 신규 추가: 가입 상세 정보 입력 및 승인 대기 페이지
 import Onboarding from "./pages/onboarding";
 import Pending from "./pages/pending";
