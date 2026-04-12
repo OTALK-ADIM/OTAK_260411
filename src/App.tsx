@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Switch, Route, useLocation } from "wouter";
-import { useEffect } from "react";
 import { supabase } from "./lib/supabase";
+
+// 페이지 컴포넌트들
 import Home from "./pages/home";
 import Feed from "./pages/feed";
 import Profile from "./pages/profile";
@@ -16,7 +17,10 @@ import Login from "./pages/login";
 import Signup from "./pages/signup";
 import Rules from "./pages/rules";
 import PublicProfile from "./pages/public-profile";
-import { useNavigate, useLocation } from "react-router-dom";
+
+// 신규 추가된 페이지 (만드신 파일명에 맞춰주세요)
+import Onboarding from "./pages/onboarding";
+import Pending from "./pages/pending";
 
 function Gatekeeper() {
   const [location, setLocation] = useLocation(); // wouter 방식
