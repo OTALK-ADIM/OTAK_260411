@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, Link } from "wouter";
 import { supabase } from "./lib/supabase";
 
 import Home from "./pages/home";
@@ -21,26 +21,20 @@ import Pending from "./pages/pending";
 
 function Gatekeeper() {
   const [location, setLocation] = useLocation();
-
   useEffect(() => {
     let mounted = true;
     const checkUserStatus = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!mounted) return;
-
       if (!user) {
         if (location !== "/" && location !== "/login" && location !== "/signup") setLocation("/");
         return;
       }
-
       const { data: profile } = await supabase.from("profiles").select("is_approved").eq("id", user.id).maybeSingle();
       if (!mounted) return;
-
-      if (!profile) {
-        if (location !== "/onboarding") setLocation("/onboarding");
-      } else if (profile.is_approved === false) {
-        if (location !== "/pending") setLocation("/pending");
-      } else {
+      if (!profile) { if (location !== "/onboarding") setLocation("/onboarding"); }
+      else if (profile.is_approved === false) { if (location !== "/pending") setLocation("/pending"); }
+      else {
         if (location === "/" || location === "/login" || location === "/onboarding" || location === "/pending") {
           setLocation("/feed");
         }
@@ -49,7 +43,6 @@ function Gatekeeper() {
     checkUserStatus();
     return () => { mounted = false; };
   }, [location]);
-
   return null;
 }
 
@@ -65,37 +58,34 @@ export default function App() {
   }, []);
 
   return (
-    // 💡 전체 배경은 검정, 내용은 가운데 정렬
-    <div className="min-h-screen w-full flex justify-center bg-black text-green-500">
-      
-      {/* 💡 핵심: 가로 폭을 600px로 꽉 묶어서 '세로형' 완성 */}
-      <div className="w-full max-w-[600px] flex flex-col px-4 pt-4 pb-12 min-h-screen">
+    // 💡 화면 전체를 감싸는 절대 방어 프레임 (가로 늘어짐 방지)
+    <div className="w-full flex justify-center bg-black min-h-screen text-green-500 selection:bg-green-500 selection:text-black px-4">
+      <div style={{ maxWidth: "768px", width: "100%", margin: "0 auto" }} className="flex flex-col min-h-screen pt-8 pb-10">
         <Gatekeeper />
 
-        {/* 1. 상단 슬로건 배너 */}
-        <div className="w-full border border-green-500 py-2 text-center text-sm md:text-base tracking-[0.5em] md:tracking-[1em] mb-2">
+        {/* 최상단 배너 (성민님이 원하시는 슬로건 복구) */}
+        <div className="border-2 border-green-500 py-3 text-center font-bold tracking-[0.5em] md:tracking-[1em] mb-8 bg-black">
           [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
         </div>
 
-        {/* 2. 상태 바 (왼쪽 정렬) */}
-        <div className="w-full flex justify-between items-center text-xs mb-4">
-          <div className="flex gap-4">
-            <span className="font-bold">SYSTEM: CONNECTED</span>
-            <span className={user ? "text-blue-500 font-bold" : "text-green-700 font-bold"}>
+        {/* 유저 상태 바 (로그인 후 화면과 동일한 구조 적용) */}
+        <div className="flex justify-between items-center text-xs mb-10 border-b border-green-900 pb-4">
+          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+            <span className="text-green-500 font-bold">SYSTEM: CONNECTED</span>
+            <span className={`font-bold ${user ? "text-blue-500" : "text-green-700"}`}>
               USER: {user ? "ONLINE" : "OFFLINE"}
             </span>
           </div>
           
-          {/* 로그인 했을 때만 로그아웃 버튼 작게 표시 */}
           {user && (
-            <button onClick={() => supabase.auth.signOut()} className="border border-green-500 px-2 py-1 text-[10px] hover:bg-green-500 hover:text-black">
+            <button onClick={() => supabase.auth.signOut()} className="text-[11px] border border-green-900 px-3 py-1 hover:bg-red-900 hover:text-white transition-all cursor-pointer bg-black">
               [ LOGOUT ]
             </button>
           )}
         </div>
 
-        {/* 3. 메인 화면 출력 */}
-        <main className="flex-grow flex flex-col w-full">
+        {/* 메인 콘텐츠 영역 (한가운데에 잘 보이게 고정) */}
+        <main className="w-full flex-grow flex flex-col items-center justify-center py-12">
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/feed" component={Feed} />
@@ -116,8 +106,7 @@ export default function App() {
           </Switch>
         </main>
 
-        {/* 4. 풋터 */}
-        <footer className="w-full border-t border-green-900/50 pt-2 mt-auto text-center text-[10px] text-green-800">
+        <footer className="w-full pt-10 pb-6 text-center text-[10px] text-green-900 opacity-80 mt-auto">
           V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </footer>
       </div>

@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 네오 둥근모 폰트 불러오기 */
+/* 💡 네오 둥근모 폰트 로드 */
 @font-face {
     font-family: 'NeoDunggeunmoPro';
     src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/NeoDunggeunmoPro-Regular.woff2') format('woff2');
@@ -10,19 +10,23 @@
     font-style: normal;
 }
 
-/* 모든 화면에 폰트와 검정 배경 강제 박제 */
-html, body, #root {
-  width: 100%;
-  min-height: 100vh;
+/* 💡 모든 브라우저 기본값 초기화 */
+* {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
+  font-family: 'NeoDunggeunmoPro', monospace !important; /* 폰트 강제 적용 */
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
   background-color: black;
-  color: #22c55e;
-  font-family: 'NeoDunggeunmoPro', monospace !important;
+  color: #22c55e; /* green-500 */
   overflow-x: hidden;
 }
 
-/* 기본 버튼 깡통 스타일 초기화 */
+/* 깡통 버튼 방지 */
 button {
   background: transparent;
   border: none;
