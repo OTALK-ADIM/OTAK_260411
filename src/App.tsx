@@ -26,22 +26,20 @@ function Gatekeeper() {
     const checkUserStatus = async () => {
       const { data: { user } } = await supabase.auth.getUser();
 
-      // 🔥 로그인 안 된 경우 → 무조건 로그인 페이지로
+      // 🔥 홈페이지(/)는 로그인 안 해도 접근 가능하게 (강제 이동 제거)
       if (!user) {
-        if (location !== "/login" && location !== "/signup") {
-          setLocation("/login");
-        }
+        // /login, /signup, /onboarding, /pending이 아니면 아무것도 안 함
         return;
       }
 
-      // 로그인 된 경우 프로필 확인
+      // 로그인된 유저만 프로필 상태 확인
       const { data: profile } = await supabase
         .from("profiles")
         .select("is_approved, nickname")
         .eq("id", user.id)
         .maybeSingle();
 
-      // Supabase → localStorage 동기화 (기존 페이지 호환용)
+      // localStorage 동기화 (다른 페이지 호환용)
       if (profile?.nickname) {
         localStorage.setItem(
           "currentUser",
@@ -54,8 +52,8 @@ function Gatekeeper() {
       } else if (profile.is_approved === false) {
         if (location !== "/pending") setLocation("/pending");
       } else {
-        // 정상 로그인 완료 → 온보딩/대기/로그인 페이지에 있으면 홈으로
-        if (location === "/onboarding" || location === "/pending" || location === "/login" || location === "/signup") {
+        // 승인 완료된 상태 → 온보딩/대기 페이지에 있으면 홈으로
+        if (location === "/onboarding" || location === "/pending") {
           setLocation("/");
         }
       }
@@ -67,33 +65,16 @@ function Gatekeeper() {
   return null;
 }
 
-// Supabase 로그인 상태 실시간 동기화 (로그아웃 시 localStorage 정리)
+// 로그인 상태 실시간 동기화
 function AuthSync() {
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        // 프로필 불러와서 localStorage에 저장
-        supabase
-          .from("profiles")
-          .select("nickname")
-          .eq("id", session.user.id)
-          .maybeSingle()
-          .then(({ data }) => {
-            if (data?.nickname) {
-              localStorage.setItem(
-                "currentUser",
-                JSON.stringify({ id: session.user.id, nickname: data.nickname })
-              );
-            }
-          });
-      } else if (event === "SIGNED_OUT") {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
         localStorage.removeItem("currentUser");
       }
     });
-
     return () => subscription.unsubscribe();
   }, []);
-
   return null;
 }
 
