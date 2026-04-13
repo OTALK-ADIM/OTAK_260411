@@ -47,15 +47,16 @@ function TerminalLayout({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-green-500 flex flex-col items-center">
+    // 💡 원인 해결: font-mono 복구 및 배경색 강제 지정
+    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center">
       <div className="w-full max-w-4xl px-4 flex flex-col items-center">
         
-        {/* 상단 배너: 고정 디자인 */}
+        {/* 상단 배너 */}
         <div className="w-full border-2 border-green-500 font-bold p-3 text-center tracking-[0.3em] mt-10 mb-6 bg-black">
           [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
         </div>
 
-        {/* 상태 바: 로그인 여부와 관계없이 높이(h-14)와 정렬 고정 */}
+        {/* 상태 바 */}
         <div className="w-full flex justify-between items-center h-14 border-b border-green-900/40 mb-10 px-1">
           <div className="text-[11px] space-y-0.5">
             <div className="flex gap-2">
@@ -72,12 +73,13 @@ function TerminalLayout({ children }: { children: React.ReactNode }) {
           
           <div className="flex items-center gap-4">
             {user ? (
-              <button onClick={() => supabase.auth.signOut()} className="text-[11px] border border-green-900 px-3 py-1 hover:bg-green-500 hover:text-black transition-all cursor-pointer">
+              // 💡 원인 해결: bg-black 명시하여 하얀색 깡통 버튼 방지
+              <button onClick={() => supabase.auth.signOut()} className="bg-black text-[11px] border border-green-900 px-3 py-1 hover:bg-green-500 hover:text-black transition-all cursor-pointer">
                 [ LOGOUT ]
               </button>
             ) : (
               <Link href="/login">
-                <button className="border border-green-500 px-4 py-1.5 text-xs font-bold hover:bg-green-500 hover:text-black transition-all cursor-pointer">
+                <button className="bg-black border border-green-500 px-4 py-1.5 text-xs font-bold hover:bg-green-500 hover:text-black transition-all cursor-pointer">
                   [ 로 그 인 ]
                 </button>
               </Link>
@@ -90,7 +92,7 @@ function TerminalLayout({ children }: { children: React.ReactNode }) {
           {children}
         </main>
 
-        {/* 풋터: 위치 고정 */}
+        {/* 풋터 */}
         <footer className="w-full py-16 text-center text-[10px] text-green-900/50 mt-auto">
           V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </footer>

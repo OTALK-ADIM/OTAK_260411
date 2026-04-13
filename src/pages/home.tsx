@@ -16,18 +16,18 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 메뉴 리스트: 좌측 정렬 고정 */}
+      {/* 메뉴 리스트: bg-transparent 추가로 하얀 버튼 에러 원천 차단 */}
       <div className="w-full flex flex-col gap-8 pl-4 md:pl-20">
-        <button onClick={() => setLocation("/rules")} className="group flex items-center text-left text-green-500 hover:text-black hover:bg-green-500 transition-all w-max px-4 py-1 text-2xl font-bold italic">
+        <button onClick={() => setLocation("/rules")} className="group flex items-center text-left bg-transparent text-green-500 hover:text-black hover:bg-green-500 transition-all w-max px-4 py-1 text-2xl font-bold italic outline-none border-none">
           <span className="mr-6 group-hover:text-black">▶</span> 0. NERD_PROTOCOL (규칙)
         </button>
-        <button onClick={() => setLocation("/feed")} className="group flex items-center text-left text-green-500 hover:text-black hover:bg-green-500 transition-all w-max px-4 py-1 text-2xl font-bold italic">
+        <button onClick={() => setLocation("/feed")} className="group flex items-center text-left bg-transparent text-green-500 hover:text-black hover:bg-green-500 transition-all w-max px-4 py-1 text-2xl font-bold italic outline-none border-none">
           <span className="mr-6 group-hover:text-black">▶</span> 1. 활동 모집 피드
         </button>
-        <button onClick={() => setLocation("/chat-list")} className="group flex items-center text-left text-green-500 hover:text-black hover:bg-green-500 transition-all w-max px-4 py-1 text-2xl font-bold italic">
+        <button onClick={() => setLocation("/chat-list")} className="group flex items-center text-left bg-transparent text-green-500 hover:text-black hover:bg-green-500 transition-all w-max px-4 py-1 text-2xl font-bold italic outline-none border-none">
           <span className="mr-6 opacity-0">▶</span> 2. 비밀 대화함 (수락전)
         </button>
-        <button onClick={() => setLocation("/profile")} className="group flex items-center text-left text-green-500 hover:text-black hover:bg-green-500 transition-all w-max px-4 py-1 text-2xl font-bold italic">
+        <button onClick={() => setLocation("/profile")} className="group flex items-center text-left bg-transparent text-green-500 hover:text-black hover:bg-green-500 transition-all w-max px-4 py-1 text-2xl font-bold italic outline-none border-none">
           <span className="mr-6 opacity-0">▶</span> 3. 나의 데이터 (프로필)
         </button>
       </div>
