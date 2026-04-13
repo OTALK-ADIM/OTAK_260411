@@ -21,17 +21,38 @@ import Pending from "./pages/pending";
 
 function Gatekeeper() {
   const [location, setLocation] = useLocation();
+
   useEffect(() => {
+    let mounted = true;
+
     const checkUserStatus = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: profile } = await supabase.from("profiles").select("is_approved").eq("id", user.id).maybeSingle();
-      if (!profile) { if (location !== "/onboarding") setLocation("/onboarding"); }
-      else if (profile.is_approved === false) { if (location !== "/pending") setLocation("/pending"); }
-      else { if (location === "/onboarding" || location === "/pending") setLocation("/"); }
+      if (!user || !mounted) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_approved")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (!mounted) return;
+
+      if (!profile) {
+        if (location !== "/onboarding") setLocation("/onboarding");
+      } else if (profile.is_approved === false) {
+        if (location !== "/pending") setLocation("/pending");
+      } else if (location === "/onboarding" || location === "/pending") {
+        setLocation("/");
+      }
     };
+
     checkUserStatus();
-  }, [location, setLocation]);
+
+    return () => {
+      mounted = false;
+    };
+  }, []);   // ← 빈 배열로 변경 (무한 루프 방지)
+
   return null;
 }
 
@@ -40,26 +61,25 @@ export default function App() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
+
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
+
     return () => authListener.subscription.unsubscribe();
   }, []);
 
   return (
-    // 💡 화면 전체는 검정색, 알맹이는 가운데 정렬
     <div className="min-h-screen w-full bg-black text-green-500 font-mono flex flex-col items-center">
-      
-      {/* 💡 핵심: 가로 넓이가 무한정 늘어나는 것을 막는 방어막 (max-w-4xl) */}
       <div className="w-full max-w-4xl flex flex-col items-center px-4 pb-10">
         <Gatekeeper />
 
-        {/* 1. 상단 배너 (이미지 그대로) */}
+        {/* 상단 배너 */}
         <div className="w-full border-2 border-green-500 font-bold py-2 text-center tracking-[0.5em] mt-10 mb-8 bg-black text-green-500">
           [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
         </div>
 
-        {/* 2. 유저 상태 및 로그인 버튼 (사라진 버튼 복구) */}
+        {/* 유저 상태 + 로그인 버튼 */}
         <div className="w-full flex justify-between items-center text-xs mb-10 px-2">
           <div className="flex gap-4 items-center">
             <span className="text-green-500 font-bold">SYSTEM: CONNECTED</span>
@@ -69,7 +89,10 @@ export default function App() {
           </div>
           
           {user ? (
-            <button onClick={() => supabase.auth.signOut()} className="border border-green-500 px-4 py-1.5 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors">
+            <button 
+              onClick={() => supabase.auth.signOut()} 
+              className="border border-green-500 px-4 py-1.5 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors"
+            >
               [ LOGOUT ]
             </button>
           ) : (
@@ -81,7 +104,7 @@ export default function App() {
           )}
         </div>
 
-        {/* 3. 메인 화면 (Home, Feed 등이 들어올 자리) */}
+        {/* 메인 콘텐츠 */}
         <main className="w-full flex flex-col items-center">
           <Switch>
             <Route path="/" component={Home} />
@@ -103,11 +126,10 @@ export default function App() {
           </Switch>
         </main>
 
-        {/* 4. 풋터 */}
+        {/* 풋터 */}
         <div className="mt-24 text-[10px] text-green-900 opacity-80 text-center w-full">
           V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </div>
-
       </div>
     </div>
   );

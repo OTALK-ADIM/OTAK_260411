@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <div className="w-full flex flex-col items-center">
       
-      {/* 중앙 OTALK 박스 (처음 이미지의 네온 느낌 그대로) */}
+      {/* OTALK 중앙 박스 (이미지와 동일한 네온 느낌) */}
       <div className="w-full border-2 border-green-500 py-16 flex flex-col items-center justify-center shadow-[0_0_15px_rgba(34,197,94,0.2)] mb-16 bg-black">
         <h1 className="text-6xl md:text-8xl font-bold text-green-500 tracking-[0.2em] mb-4 drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]">
           OTALK
@@ -16,7 +16,7 @@ export default function Home() {
         </p>
       </div>
 
-      {/* 심플한 텍스트 메뉴 리스트 (처음 이미지 그대로 복구) */}
+      {/* 메뉴 리스트 (이미지와 정확히 동일한 스타일) */}
       <div className="w-full max-w-2xl flex flex-col gap-8 text-xl md:text-2xl font-bold pl-4 md:pl-10">
         <button 
           onClick={() => setLocation("/rules")} 
