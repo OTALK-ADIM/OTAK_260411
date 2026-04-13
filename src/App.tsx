@@ -24,26 +24,16 @@ function Gatekeeper() {
 
   useEffect(() => {
     let mounted = true;
-
     const checkUserStatus = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!mounted) return;
 
-      // 💡 1. 비로그인 유저 통제: 허락된 곳 외엔 모두 메인(/)으로 쫓아냄
       if (!user) {
-        if (location !== "/" && location !== "/login" && location !== "/signup") {
-          setLocation("/");
-        }
+        if (location !== "/" && location !== "/login" && location !== "/signup") setLocation("/");
         return;
       }
 
-      // 💡 2. 로그인 유저 프로필(승인) 확인
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_approved")
-        .eq("id", user.id)
-        .maybeSingle();
-
+      const { data: profile } = await supabase.from("profiles").select("is_approved").eq("id", user.id).maybeSingle();
       if (!mounted) return;
 
       if (!profile) {
@@ -51,19 +41,14 @@ function Gatekeeper() {
       } else if (profile.is_approved === false) {
         if (location !== "/pending") setLocation("/pending");
       } else {
-        // 💡 3. 승인 완료된 유저: 메인이나 로그인 창에 오면 피드(/feed)로 자동 입장시킴
         if (location === "/" || location === "/login" || location === "/onboarding" || location === "/pending") {
           setLocation("/feed");
         }
       }
     };
-
     checkUserStatus();
-
-    return () => {
-      mounted = false;
-    };
-  }, [location]); // location이 바뀔 때마다 감시
+    return () => { mounted = false; };
+  }, [location]);
 
   return null;
 }
@@ -73,21 +58,26 @@ export default function App() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
-
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
-
     return () => authListener.subscription.unsubscribe();
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-black text-green-500 font-mono flex flex-col items-center selection:bg-green-500 selection:text-black">
-      <div className="w-full max-w-4xl flex flex-col items-center px-4 pb-10 pt-6">
+    // 💡 핵심: w-full flex justify-center 로 전체 화면을 잡고,
+    // 그 안의 알맹이를 max-w-3xl 로 묶어서 가로 늘어짐을 완벽히 차단합니다.
+    <div className="min-h-screen bg-black text-green-500 font-mono w-full flex justify-center selection:bg-green-500 selection:text-black">
+      <div className="w-full max-w-3xl flex flex-col px-4 py-8">
         <Gatekeeper />
 
-        {/* 유저 상태 표시줄 (최상단) */}
-        <div className="w-full flex justify-between items-center text-xs mb-10 px-2 border-b border-green-900/50 pb-2">
+        {/* 1. 상단 배너 (이미지 완벽 복구) */}
+        <div className="w-full border border-green-500 py-3 text-center font-bold tracking-[0.5em] md:tracking-[1em] mb-10 text-sm md:text-base">
+          [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
+        </div>
+
+        {/* 2. 유저 상태 바 (이미지 완벽 복구) */}
+        <div className="w-full flex justify-between items-center text-[11px] md:text-xs mb-10 border-b border-green-900/30 pb-4">
           <div className="flex gap-4 items-center">
             <span className="text-green-500 font-bold">SYSTEM: CONNECTED</span>
             <span className={`font-bold ${user ? "text-blue-500" : "text-red-500"}`}>
@@ -95,18 +85,21 @@ export default function App() {
             </span>
           </div>
           
-          {user && (
-            <button 
-              onClick={() => supabase.auth.signOut()} 
-              className="border border-green-500 px-3 py-1 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors"
-            >
+          {user ? (
+            <button onClick={() => supabase.auth.signOut()} className="border border-green-500 px-3 py-1 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors cursor-pointer">
               [ LOGOUT ]
             </button>
+          ) : (
+            <Link href="/login">
+              <button className="border border-green-500 px-3 py-1 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors cursor-pointer">
+                [ 로 그 인 ]
+              </button>
+            </Link>
           )}
         </div>
 
-        {/* 메인 콘텐츠 (여기에 Home, Feed 등이 담김) */}
-        <main className="w-full flex flex-col items-center min-h-[60vh]">
+        {/* 3. 메인 콘텐츠 */}
+        <main className="w-full flex-grow flex flex-col">
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/feed" component={Feed} />
@@ -127,9 +120,10 @@ export default function App() {
           </Switch>
         </main>
 
-        <div className="mt-24 text-[10px] text-green-900 opacity-80 text-center w-full">
+        {/* 4. 하단 풋터 */}
+        <footer className="w-full border-t border-green-900/40 pt-4 mt-20 text-[10px] text-green-900 text-center opacity-80">
           V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
-        </div>
+        </footer>
       </div>
     </div>
   );
