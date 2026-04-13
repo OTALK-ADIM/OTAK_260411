@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Switch, Route, useLocation, Link } from "wouter";
+import { useEffect } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { supabase } from "./lib/supabase";
 
 import Home from "./pages/home";
@@ -35,75 +35,10 @@ function Gatekeeper() {
   return null;
 }
 
-function TerminalLayout({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<any>(null);
-  
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => authListener.subscription.unsubscribe();
-  }, []);
-
-  return (
-    // 💡 원인 해결: font-mono 복구 및 배경색 강제 지정
-    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center">
-      <div className="w-full max-w-4xl px-4 flex flex-col items-center">
-        
-        {/* 상단 배너 */}
-        <div className="w-full border-2 border-green-500 font-bold p-3 text-center tracking-[0.3em] mt-10 mb-6 bg-black">
-          [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
-        </div>
-
-        {/* 상태 바 */}
-        <div className="w-full flex justify-between items-center h-14 border-b border-green-900/40 mb-10 px-1">
-          <div className="text-[11px] space-y-0.5">
-            <div className="flex gap-2">
-              <span className="text-green-900 font-bold">SYSTEM:</span>
-              <span className="text-green-500">CONNECTED</span>
-            </div>
-            <div className="flex gap-2">
-              <span className="text-green-900 font-bold">USER:</span>
-              <span className={user ? "text-green-500" : "text-red-600"}>
-                {user ? "ONLINE" : "OFFLINE"}
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            {user ? (
-              // 💡 원인 해결: bg-black 명시하여 하얀색 깡통 버튼 방지
-              <button onClick={() => supabase.auth.signOut()} className="bg-black text-[11px] border border-green-900 px-3 py-1 hover:bg-green-500 hover:text-black transition-all cursor-pointer">
-                [ LOGOUT ]
-              </button>
-            ) : (
-              <Link href="/login">
-                <button className="bg-black border border-green-500 px-4 py-1.5 text-xs font-bold hover:bg-green-500 hover:text-black transition-all cursor-pointer">
-                  [ 로 그 인 ]
-                </button>
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* 메인 콘텐츠 영역 */}
-        <main className="w-full">
-          {children}
-        </main>
-
-        {/* 풋터 */}
-        <footer className="w-full py-16 text-center text-[10px] text-green-900/50 mt-auto">
-          V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
-        </footer>
-      </div>
-    </div>
-  );
-}
-
 export default function App() {
   return (
-    <TerminalLayout>
+    // 💡 가장 핵심: 이상한 글로벌 레이아웃을 지우고, feed.tsx가 가장 예쁘게 담기는 래퍼로 복구
+    <div className="min-h-screen bg-black text-green-500 font-mono max-w-2xl mx-auto p-4 sm:p-6 flex flex-col">
       <Gatekeeper />
       <Switch>
         <Route path="/" component={Home} />
@@ -123,6 +58,6 @@ export default function App() {
         <Route path="/pending" component={Pending} />
         <Route component={NotFound} />
       </Switch>
-    </TerminalLayout>
+    </div>
   );
 }
