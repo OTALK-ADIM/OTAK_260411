@@ -27,8 +27,17 @@ function Gatekeeper() {
 
     const checkUserStatus = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !mounted) return;
+      if (!mounted) return;
 
+      // 💡 1. 비로그인 유저 통제: 허락된 곳 외엔 모두 메인(/)으로 쫓아냄
+      if (!user) {
+        if (location !== "/" && location !== "/login" && location !== "/signup") {
+          setLocation("/");
+        }
+        return;
+      }
+
+      // 💡 2. 로그인 유저 프로필(승인) 확인
       const { data: profile } = await supabase
         .from("profiles")
         .select("is_approved")
@@ -41,8 +50,11 @@ function Gatekeeper() {
         if (location !== "/onboarding") setLocation("/onboarding");
       } else if (profile.is_approved === false) {
         if (location !== "/pending") setLocation("/pending");
-      } else if (location === "/onboarding" || location === "/pending") {
-        setLocation("/");
+      } else {
+        // 💡 3. 승인 완료된 유저: 메인이나 로그인 창에 오면 피드(/feed)로 자동 입장시킴
+        if (location === "/" || location === "/login" || location === "/onboarding" || location === "/pending") {
+          setLocation("/feed");
+        }
       }
     };
 
@@ -51,7 +63,7 @@ function Gatekeeper() {
     return () => {
       mounted = false;
     };
-  }, []);   // ← 빈 배열로 변경 (무한 루프 방지)
+  }, [location]); // location이 바뀔 때마다 감시
 
   return null;
 }
@@ -70,17 +82,12 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-black text-green-500 font-mono flex flex-col items-center">
-      <div className="w-full max-w-4xl flex flex-col items-center px-4 pb-10">
+    <div className="min-h-screen w-full bg-black text-green-500 font-mono flex flex-col items-center selection:bg-green-500 selection:text-black">
+      <div className="w-full max-w-4xl flex flex-col items-center px-4 pb-10 pt-6">
         <Gatekeeper />
 
-        {/* 상단 배너 */}
-        <div className="w-full border-2 border-green-500 font-bold py-2 text-center tracking-[0.5em] mt-10 mb-8 bg-black text-green-500">
-          [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
-        </div>
-
-        {/* 유저 상태 + 로그인 버튼 */}
-        <div className="w-full flex justify-between items-center text-xs mb-10 px-2">
+        {/* 유저 상태 표시줄 (최상단) */}
+        <div className="w-full flex justify-between items-center text-xs mb-10 px-2 border-b border-green-900/50 pb-2">
           <div className="flex gap-4 items-center">
             <span className="text-green-500 font-bold">SYSTEM: CONNECTED</span>
             <span className={`font-bold ${user ? "text-blue-500" : "text-red-500"}`}>
@@ -88,24 +95,18 @@ export default function App() {
             </span>
           </div>
           
-          {user ? (
+          {user && (
             <button 
               onClick={() => supabase.auth.signOut()} 
-              className="border border-green-500 px-4 py-1.5 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors"
+              className="border border-green-500 px-3 py-1 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors"
             >
               [ LOGOUT ]
             </button>
-          ) : (
-            <Link href="/login">
-              <button className="border border-green-500 px-4 py-1.5 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors">
-                [ 로 그 인 ]
-              </button>
-            </Link>
           )}
         </div>
 
-        {/* 메인 콘텐츠 */}
-        <main className="w-full flex flex-col items-center">
+        {/* 메인 콘텐츠 (여기에 Home, Feed 등이 담김) */}
+        <main className="w-full flex flex-col items-center min-h-[60vh]">
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/feed" component={Feed} />
@@ -126,7 +127,6 @@ export default function App() {
           </Switch>
         </main>
 
-        {/* 풋터 */}
         <div className="mt-24 text-[10px] text-green-900 opacity-80 text-center w-full">
           V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </div>

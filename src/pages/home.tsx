@@ -1,50 +1,37 @@
-import { useLocation } from "wouter";
+import { Link } from "wouter";
 
 export default function Home() {
-  const [, setLocation] = useLocation();
-
   return (
-    <div className="w-full flex flex-col items-center">
+    <div className="w-full flex flex-col items-center justify-center mt-10 gap-16">
       
-      {/* OTALK 중앙 박스 (이미지와 동일한 네온 느낌) */}
-      <div className="w-full border-2 border-green-500 py-16 flex flex-col items-center justify-center shadow-[0_0_15px_rgba(34,197,94,0.2)] mb-16 bg-black">
-        <h1 className="text-6xl md:text-8xl font-bold text-green-500 tracking-[0.2em] mb-4 drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]">
+      {/* 💡 1. 오타쿠 슬로건 (글로벌에서 이쪽으로 이사 옴) */}
+      <div className="w-full border-y-2 border-green-500 py-4 text-center">
+        <h2 className="text-green-500 font-bold tracking-[0.5em] md:tracking-[1em] text-sm md:text-lg">
+          [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
+        </h2>
+      </div>
+
+      {/* 💡 2. 거대한 OTALK 로고 */}
+      <div className="flex flex-col items-center justify-center">
+        <h1 className="text-7xl md:text-[9rem] font-bold text-green-500 tracking-[0.25em] mb-4 drop-shadow-[0_0_20px_rgba(34,197,94,0.8)]">
           OTALK
         </h1>
-        <p className="text-xs md:text-sm text-green-900 tracking-widest font-mono">
+        <p className="text-xs md:text-sm text-green-900 tracking-[0.5em] font-mono uppercase">
           NEO_GEEK_NETWORK_SYSTEM
         </p>
       </div>
 
-      {/* 메뉴 리스트 (이미지와 정확히 동일한 스타일) */}
-      <div className="w-full max-w-2xl flex flex-col gap-8 text-xl md:text-2xl font-bold pl-4 md:pl-10">
-        <button 
-          onClick={() => setLocation("/rules")} 
-          className="flex items-center text-left hover:underline text-green-500 bg-transparent border-none outline-none w-fit"
-        >
-          <span className="text-green-500 mr-4">▶</span> 0. NERD_PROTOCOL (규칙)
-        </button>
+      {/* 💡 3. 유일한 출입구 (로그인 버튼) */}
+      <div className="flex flex-col items-center gap-4 mt-8">
+        <p className="text-[10px] text-green-700 animate-pulse font-bold tracking-widest">
+          :: RESTRICTED AREA - AUTHENTICATION REQUIRED ::
+        </p>
         
-        <button 
-          onClick={() => setLocation("/feed")} 
-          className="flex items-center text-left hover:underline text-green-500 bg-transparent border-none outline-none w-fit"
-        >
-          <span className="text-green-500 mr-4">▶</span> 1. 활동 모집 피드
-        </button>
-        
-        <button 
-          onClick={() => setLocation("/chat-list")} 
-          className="flex items-center text-left hover:underline text-green-500 bg-transparent border-none outline-none ml-9 w-fit"
-        >
-          2. 비밀 대화함 (수락전)
-        </button>
-        
-        <button 
-          onClick={() => setLocation("/profile")} 
-          className="flex items-center text-left hover:underline text-green-500 bg-transparent border-none outline-none ml-9 w-fit"
-        >
-          3. 나의 데이터 (프로필)
-        </button>
+        <Link href="/login">
+          <button className="border-2 border-green-500 bg-black text-green-500 px-12 py-4 text-xl md:text-2xl font-bold hover:bg-green-500 hover:text-black transition-all shadow-[0_0_15px_rgba(34,197,94,0.4)]">
+            [ 시 스 템 접 속 ]
+          </button>
+        </Link>
       </div>
 
     </div>
