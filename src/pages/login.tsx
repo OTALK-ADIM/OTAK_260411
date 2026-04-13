@@ -4,38 +4,43 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        // 로그인 완료 후 다시 돌아올 우리 사이트 주소
-        redirectTo: window.location.origin 
-      }
+      options: { redirectTo: window.location.origin }
     });
 
     if (error) {
-      console.error("접속 에러:", error.message);
       alert("로그인 중 문제가 발생했습니다.");
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] font-mono">
-      <div className="border border-green-500 p-8 bg-black shadow-[0_0_15px_rgba(34,197,94,0.3)]">
-        <h2 className="text-green-500 text-xl mb-6 text-center animate-pulse">
-          :: USER_AUTHENTICATION ::
+    <div className="w-full flex flex-col items-center mt-2">
+      
+      {/* 인증 경고 박스 */}
+      <div className="w-full border border-green-500 py-8 flex flex-col items-center justify-center mb-8 bg-black">
+        <h2 className="text-2xl md:text-3xl font-bold text-green-400 tracking-widest mb-2">
+          USER_AUTHENTICATION
         </h2>
-        
-        {/* 구글 로그인 버튼 */}
-        <button
-          onClick={handleGoogleLogin}
-          className="w-full border-2 border-green-500 text-green-500 py-3 px-6 hover:bg-green-500 hover:text-black transition-all font-bold flex items-center justify-center gap-2 group"
-        >
-          <span className="group-hover:animate-bounce">▶</span> 
-          SIGN_IN_WITH_GOOGLE
-        </button>
-
-        <p className="text-green-900 text-[10px] mt-6 text-center">
+        <p className="text-[10px] tracking-widest text-red-500 animate-pulse">
           WARNING: UNAUTHORIZED ACCESS IS PROHIBITED
         </p>
       </div>
+
+      {/* 💡 구글 로그인 안내 코멘트 창 */}
+      <div className="w-full border border-dashed border-green-600 p-6 mb-10 bg-green-950/20 text-green-500 text-sm leading-relaxed text-center">
+        <div className="font-bold text-lg mb-2">:: 구글 계정 동기화 ::</div>
+        안전한 입국 심사 및 데이터 보존을 위해 <br />
+        <span className="text-white">Google 계정 인증</span>이 필요합니다.<br />
+        아래 버튼을 눌러 인증을 진행해 주십시오.
+      </div>
+
+      {/* 구글 접속 버튼 */}
+      <button
+        onClick={handleGoogleLogin}
+        className="border-2 border-green-500 bg-black text-green-400 px-10 py-3 text-xl font-bold hover:bg-green-500 hover:text-black transition-all"
+      >
+        [ 구글 계정으로 접속 ]
+      </button>
+
     </div>
   );
 }
