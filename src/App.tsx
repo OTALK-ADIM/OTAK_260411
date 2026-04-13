@@ -65,41 +65,35 @@ export default function App() {
   }, []);
 
   return (
-    // 💡 핵심: w-full flex justify-center 로 전체 화면을 잡고,
-    // 그 안의 알맹이를 max-w-3xl 로 묶어서 가로 늘어짐을 완벽히 차단합니다.
-    <div className="min-h-screen bg-black text-green-500 font-mono w-full flex justify-center selection:bg-green-500 selection:text-black">
-      <div className="w-full max-w-3xl flex flex-col px-4 py-8">
+    <div className="min-h-screen bg-black text-green-500 font-mono w-full px-4 selection:bg-green-500 selection:text-black">
+      
+      {/* 💡 핵심: 어떤 경우에도 화면이 768px을 넘지 못하도록 인라인 스타일로 절대 박제 */}
+      <div style={{ maxWidth: "768px", width: "100%", margin: "0 auto" }} className="flex flex-col min-h-screen pt-8 pb-10">
         <Gatekeeper />
 
-        {/* 1. 상단 배너 (이미지 완벽 복구) */}
-        <div className="w-full border border-green-500 py-3 text-center font-bold tracking-[0.5em] md:tracking-[1em] mb-10 text-sm md:text-base">
+        {/* 1. 상단 배너 */}
+        <div className="border-2 border-green-500 py-3 text-center font-bold tracking-[0.5em] md:tracking-[1em] mb-8 bg-black">
           [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
         </div>
 
-        {/* 2. 유저 상태 바 (이미지 완벽 복구) */}
-        <div className="w-full flex justify-between items-center text-[11px] md:text-xs mb-10 border-b border-green-900/30 pb-4">
-          <div className="flex gap-4 items-center">
+        {/* 2. 유저 상태 바 */}
+        <div className="flex justify-between items-center text-xs mb-10 border-b border-green-900/50 pb-4">
+          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
             <span className="text-green-500 font-bold">SYSTEM: CONNECTED</span>
             <span className={`font-bold ${user ? "text-blue-500" : "text-red-500"}`}>
-              USER: {user ? `ONLINE (${user.email})` : "OFFLINE"}
+              USER: {user ? `ONLINE` : "OFFLINE"}
             </span>
           </div>
           
-          {user ? (
+          {user && (
             <button onClick={() => supabase.auth.signOut()} className="border border-green-500 px-3 py-1 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors cursor-pointer">
               [ LOGOUT ]
             </button>
-          ) : (
-            <Link href="/login">
-              <button className="border border-green-500 px-3 py-1 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors cursor-pointer">
-                [ 로 그 인 ]
-              </button>
-            </Link>
           )}
         </div>
 
         {/* 3. 메인 콘텐츠 */}
-        <main className="w-full flex-grow flex flex-col">
+        <main className="flex-grow flex flex-col w-full">
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/feed" component={Feed} />
@@ -124,6 +118,7 @@ export default function App() {
         <footer className="w-full border-t border-green-900/40 pt-4 mt-20 text-[10px] text-green-900 text-center opacity-80">
           V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </footer>
+
       </div>
     </div>
   );
