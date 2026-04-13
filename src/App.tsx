@@ -47,35 +47,42 @@ export default function App() {
   }, []);
 
   return (
-    // 💡 피드 페이지의 핵심 규격(max-w-2xl)을 전체에 적용
-    <div className="min-h-screen bg-black text-green-500 font-mono flex flex-col items-center selection:bg-green-500 selection:text-black">
-      <div className="w-full max-w-2xl px-4 py-8 flex flex-col gap-6">
+    // 💡 화면 전체는 검정색, 알맹이는 가운데 정렬
+    <div className="min-h-screen w-full bg-black text-green-500 font-mono flex flex-col items-center">
+      
+      {/* 💡 핵심: 가로 넓이가 무한정 늘어나는 것을 막는 방어막 (max-w-4xl) */}
+      <div className="w-full max-w-4xl flex flex-col items-center px-4 pb-10">
         <Gatekeeper />
-        
-        {/* 모든 페이지 공통 헤더 */}
-        <header className="border-b-2 border-green-500 pb-4 flex justify-between items-center bg-black">
-          <Link href="/">
-            <h1 className="text-xl font-bold tracking-tighter cursor-pointer hover:bg-green-500 hover:text-black px-1 transition-all">
-              [ N E O _ G E E K _ S Y S T E M ]
-            </h1>
-          </Link>
-          <div className="flex items-center gap-3">
-            {user ? (
-              <button onClick={() => supabase.auth.signOut()} className="text-[10px] border border-green-900 px-2 py-1 hover:bg-red-900 hover:text-white transition-all">
-                [ LOGOUT ]
-              </button>
-            ) : (
-              <Link href="/login">
-                <button className="text-[10px] border border-green-500 px-2 py-1 hover:bg-green-500 hover:text-black transition-all font-bold">
-                  [ LOGIN ]
-                </button>
-              </Link>
-            )}
-          </div>
-        </header>
 
-        {/* 페이지 알맹이 */}
-        <main className="w-full flex-grow">
+        {/* 1. 상단 배너 (이미지 그대로) */}
+        <div className="w-full border-2 border-green-500 font-bold py-2 text-center tracking-[0.5em] mt-10 mb-8 bg-black text-green-500">
+          [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
+        </div>
+
+        {/* 2. 유저 상태 및 로그인 버튼 (사라진 버튼 복구) */}
+        <div className="w-full flex justify-between items-center text-xs mb-10 px-2">
+          <div className="flex gap-4 items-center">
+            <span className="text-green-500 font-bold">SYSTEM: CONNECTED</span>
+            <span className={`font-bold ${user ? "text-blue-500" : "text-red-500"}`}>
+              USER: {user ? `ONLINE (${user.email})` : "OFFLINE"}
+            </span>
+          </div>
+          
+          {user ? (
+            <button onClick={() => supabase.auth.signOut()} className="border border-green-500 px-4 py-1.5 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors">
+              [ LOGOUT ]
+            </button>
+          ) : (
+            <Link href="/login">
+              <button className="border border-green-500 px-4 py-1.5 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors">
+                [ 로 그 인 ]
+              </button>
+            </Link>
+          )}
+        </div>
+
+        {/* 3. 메인 화면 (Home, Feed 등이 들어올 자리) */}
+        <main className="w-full flex flex-col items-center">
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/feed" component={Feed} />
@@ -96,11 +103,11 @@ export default function App() {
           </Switch>
         </main>
 
-        <footer className="border-t border-green-900/30 pt-10 pb-6 text-center">
-          <p className="text-[10px] opacity-30 italic">
-            V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
-          </p>
-        </footer>
+        {/* 4. 풋터 */}
+        <div className="mt-24 text-[10px] text-green-900 opacity-80 text-center w-full">
+          V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
+        </div>
+
       </div>
     </div>
   );
