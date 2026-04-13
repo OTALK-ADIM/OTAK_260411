@@ -21,26 +21,20 @@ import Pending from "./pages/pending";
 
 function Gatekeeper() {
   const [location, setLocation] = useLocation();
-
   useEffect(() => {
     let mounted = true;
     const checkUserStatus = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!mounted) return;
-
       if (!user) {
         if (location !== "/" && location !== "/login" && location !== "/signup") setLocation("/");
         return;
       }
-
       const { data: profile } = await supabase.from("profiles").select("is_approved").eq("id", user.id).maybeSingle();
       if (!mounted) return;
-
-      if (!profile) {
-        if (location !== "/onboarding") setLocation("/onboarding");
-      } else if (profile.is_approved === false) {
-        if (location !== "/pending") setLocation("/pending");
-      } else {
+      if (!profile) { if (location !== "/onboarding") setLocation("/onboarding"); }
+      else if (profile.is_approved === false) { if (location !== "/pending") setLocation("/pending"); }
+      else {
         if (location === "/" || location === "/login" || location === "/onboarding" || location === "/pending") {
           setLocation("/feed");
         }
@@ -49,7 +43,6 @@ function Gatekeeper() {
     checkUserStatus();
     return () => { mounted = false; };
   }, [location]);
-
   return null;
 }
 
@@ -65,35 +58,48 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-black text-green-500 font-mono w-full px-4 selection:bg-green-500 selection:text-black">
-      
-      {/* 💡 핵심: 어떤 경우에도 화면이 768px을 넘지 못하도록 인라인 스타일로 절대 박제 */}
-      <div style={{ maxWidth: "768px", width: "100%", margin: "0 auto" }} className="flex flex-col min-h-screen pt-8 pb-10">
+    // 💡 화면 전체를 감싸는 절대 방어 프레임 (가로 늘어짐 방지)
+    <div className="w-full flex justify-center bg-black min-h-screen text-green-500 selection:bg-green-500 selection:text-black">
+      <div className="w-full max-w-2xl px-4 pt-10 pb-8 flex flex-col items-center">
         <Gatekeeper />
 
-        {/* 1. 상단 배너 */}
-        <div className="border-2 border-green-500 py-3 text-center font-bold tracking-[0.5em] md:tracking-[1em] mb-8 bg-black">
-          [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
+        {/* 최상단: [ 오 타 쿠 가 세 상 을 지 배 한 다 . ] */}
+        <div className="w-full border-b border-green-900 pb-2 mb-2 text-center">
+          <h1 className="text-xl font-bold tracking-[0.3em] hover:bg-green-500 hover:text-black transition-all px-2">
+            [ N E O _ G E E K _ S Y S T E M ]
+          </h1>
         </div>
 
-        {/* 2. 유저 상태 바 */}
-        <div className="flex justify-between items-center text-xs mb-10 border-b border-green-900/50 pb-4">
-          <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-            <span className="text-green-500 font-bold">SYSTEM: CONNECTED</span>
-            <span className={`font-bold ${user ? "text-blue-500" : "text-red-500"}`}>
-              USER: {user ? `ONLINE` : "OFFLINE"}
-            </span>
+        {/* 상태 바 (디자인 완벽 보존) */}
+        <div className="w-full flex justify-between items-center h-14 border-b border-green-900 mb-8 px-1">
+          <div className="text-[11px] leading-tight space-y-0.5">
+            <div className="flex gap-2">
+              <span className="text-green-900 font-bold">SYSTEM:</span>
+              <span>CONNECTED</span>
+            </div>
+            <div className="flex gap-2">
+              <span className="text-green-900 font-bold">USER:</span>
+              <span className={user ? "text-green-500" : "text-red-600"}>
+                {user ? `ONLINE (${user.email})` : "OFFLINE"}
+              </span>
+            </div>
           </div>
           
-          {user && (
-            <button onClick={() => supabase.auth.signOut()} className="border border-green-500 px-3 py-1 hover:bg-green-500 hover:text-black font-bold bg-black text-green-500 transition-colors cursor-pointer">
+          {user ? (
+            <button onClick={() => supabase.auth.signOut()} className="text-[11px] border border-green-900 px-3 py-1 hover:bg-red-900 hover:text-white transition-all cursor-pointer bg-black">
               [ LOGOUT ]
             </button>
+          ) : (
+            <Link href="/login">
+              <button className="border border-green-500 px-4 py-1.5 text-xs font-bold hover:bg-green-500 hover:text-black transition-all cursor-pointer bg-black">
+                [ LOGIN ]
+              </button>
+            </Link>
           )}
         </div>
 
-        {/* 3. 메인 콘텐츠 */}
-        <main className="flex-grow flex flex-col w-full">
+        {/* 💡 핵심: 메인 콘텐츠 영역 (한가운데에 잘 보이게 고정) */}
+        <main className="w-full flex-grow flex flex-col items-center justify-center py-12">
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/feed" component={Feed} />
@@ -114,11 +120,9 @@ export default function App() {
           </Switch>
         </main>
 
-        {/* 4. 하단 풋터 */}
-        <footer className="w-full border-t border-green-900/40 pt-4 mt-20 text-[10px] text-green-900 text-center opacity-80">
+        <footer className="w-full py-16 text-center text-[10px] text-green-900/50 mt-auto">
           V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </footer>
-
       </div>
     </div>
   );

@@ -2,12 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 모든 요소에 터미널 감성 강제 주입 */
+/* 💡 네오 둥근모 폰트 로드 */
+@font-face {
+    font-family: 'NeoDunggeunmoPro';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/NeoDunggeunmoPro-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* 💡 모든 브라우저 기본값 초기화 */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  background-color: transparent; /* 기본 배경 투명화 */
+  font-family: 'NeoDunggeunmoPro', ui-monospace, Consolas, monospace !important; /* 폰트 강제 적용 */
 }
 
 html, body, #root {
@@ -15,12 +23,14 @@ html, body, #root {
   height: 100%;
   background-color: black;
   color: #22c55e; /* green-500 */
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  overflow-x: hidden;
 }
 
-/* 버튼 기본 스타일 박제 */
+/* 깡통 버튼 방지 */
 button {
-  cursor: pointer;
+  background: transparent;
   border: none;
-  outline: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
