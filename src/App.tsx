@@ -23,49 +23,52 @@ function Gatekeeper() {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
+    let isMounted = true;
+
     const checkUserStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user || !isMounted) return;
 
-      // 🔥 홈페이지(/)는 로그인 안 해도 접근 가능하게 (강제 이동 제거)
-      if (!user) {
-        // /login, /signup, /onboarding, /pending이 아니면 아무것도 안 함
-        return;
-      }
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_approved, nickname")
+          .eq("id", user.id)
+          .maybeSingle();
 
-      // 로그인된 유저만 프로필 상태 확인
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_approved, nickname")
-        .eq("id", user.id)
-        .maybeSingle();
+        if (!isMounted) return;
 
-      // localStorage 동기화 (다른 페이지 호환용)
-      if (profile?.nickname) {
-        localStorage.setItem(
-          "currentUser",
-          JSON.stringify({ id: user.id, nickname: profile.nickname })
-        );
-      }
+        // localStorage 동기화
+        if (profile?.nickname) {
+          localStorage.setItem(
+            "currentUser",
+            JSON.stringify({ id: user.id, nickname: profile.nickname })
+          );
+        }
 
-      if (!profile) {
-        if (location !== "/onboarding") setLocation("/onboarding");
-      } else if (profile.is_approved === false) {
-        if (location !== "/pending") setLocation("/pending");
-      } else {
-        // 승인 완료된 상태 → 온보딩/대기 페이지에 있으면 홈으로
-        if (location === "/onboarding" || location === "/pending") {
+        // 프로필 상태에 따른 리다이렉트
+        if (!profile) {
+          if (location !== "/onboarding") setLocation("/onboarding");
+        } else if (profile.is_approved === false) {
+          if (location !== "/pending") setLocation("/pending");
+        } else if (location === "/onboarding" || location === "/pending") {
           setLocation("/");
         }
+      } catch (err) {
+        console.error("[Gatekeeper 에러]", err);
       }
     };
 
     checkUserStatus();
-  }, [location, setLocation]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []); // ← 빈 배열로 변경 (한 번만 실행 → 무한 루프 방지)
 
   return null;
 }
 
-// 로그인 상태 실시간 동기화
 function AuthSync() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
