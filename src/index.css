@@ -2,7 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 모든 요소에 터미널 감성 강제 주입 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: transparent; /* 기본 배경 투명화 */
+}
+
 html, body, #root {
+  width: 100%;
+  height: 100%;
   background-color: black;
-  color: #22c55e;
+  color: #22c55e; /* green-500 */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+
+/* 버튼 기본 스타일 박제 */
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
 }
