@@ -1,102 +1,59 @@
 import { useLocation } from "wouter";
-import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const [nickname, setNickname] = useState<string>("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  useEffect(() => {
-    const checkLogin = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setIsLoggedIn(true);
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("nickname")
-          .eq("id", user.id)
-          .maybeSingle();
-        if (profile?.nickname) setNickname(profile.nickname);
-      } else {
-        setIsLoggedIn(false);
-        setNickname("");
-      }
-    };
-    checkLogin();
-  }, []);
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setIsLoggedIn(false);
-    setNickname("");
-  };
+  // 피드의 게시글 리스트와 동일한 디자인 DNA를 가진 메뉴 구조
+  const menuItems = [
+    { id: "0", cat: "PROTOCOL", title: "NERD_PROTOCOL (규칙)", path: "/rules" },
+    { id: "1", cat: "ARCHIVE", title: "활동 모집 피드", path: "/feed" },
+    { id: "2", cat: "COMMS", title: "비밀 대화함 (수락전)", path: "/chat-list" },
+    { id: "3", cat: "USER_DATA", title: "나의 데이터 (프로필)", path: "/profile" },
+  ];
 
   return (
     <div className="w-full flex flex-col gap-6 font-mono">
-      {/* 상단 바 */}
-      <div className="border-b-2 border-green-500 pb-2 text-center font-bold tracking-widest text-lg">
-        [ N E O _ G E E K _ S Y S T E M ]
-      </div>
-
-      {/* 메인 로고 + 환영 메시지 (항상 로그인 후 스타일) */}
-      <div className="bg-[#0a0a0a] p-10 border border-green-500/50 flex flex-col items-center gap-3 shadow-[0_0_15px_rgba(0,255,0,0.1)]">
-        <h1 className="text-5xl md:text-7xl font-bold text-green-500 tracking-[0.2em] drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]">
+      {/* 중앙 로고: 피드의 검색바/카테고리와 동일한 박스 모델 적용 */}
+      <div className="bg-[#0a0a0a] border-2 border-green-500 p-8 text-center shadow-[0_0_15px_rgba(0,255,0,0.1)]">
+        <h2 className="text-5xl md:text-6xl font-bold tracking-[0.2em] text-green-500 mb-2">
           OTALK
-        </h1>
-        <p className="text-xs opacity-50 tracking-widest uppercase">
+        </h2>
+        <p className="text-[10px] opacity-40 tracking-widest uppercase">
           Neo_Geek_Network_System
         </p>
-        {isLoggedIn && nickname && (
-          <p className="text-green-400 text-sm mt-4 font-bold">WELCOME, {nickname}</p>
-        )}
       </div>
 
-      {/* 메뉴 리스트 (항상 동일한 로그인 후 스타일) */}
-      <div className="flex flex-col gap-3">
-        <button
-          onClick={() => setLocation("/rules")}
-          className="bg-[#0a0a0a] border border-green-500/30 p-4 text-left font-bold hover:bg-green-500 hover:text-black transition-colors flex items-center"
-        >
-          <span className="mr-4 text-green-500">▶</span> 0. NERD_PROTOCOL (규칙)
-        </button>
-        <button
-          onClick={() => setLocation("/feed")}
-          className="bg-[#0a0a0a] border border-green-500/30 p-4 text-left font-bold hover:bg-green-500 hover:text-black transition-colors flex items-center"
-        >
-          <span className="mr-4 text-green-500">▶</span> 1. 활동 모집 피드
-        </button>
-        <button
-          onClick={() => setLocation("/chat-list")}
-          className="bg-[#0a0a0a] border border-green-500/30 p-4 text-left font-bold hover:bg-green-500 hover:text-black transition-colors flex items-center"
-        >
-          <span className="mr-4 text-green-500">▶</span> 2. 비밀 대화함
-        </button>
-        <button
-          onClick={() => setLocation("/profile")}
-          className="bg-[#0a0a0a] border border-green-500/30 p-4 text-left font-bold hover:bg-green-500 hover:text-black transition-colors flex items-center"
-        >
-          <span className="mr-4 text-green-500">▶</span> 3. 나의 데이터 (프로필)
-        </button>
+      {/* 메뉴 섹션 헤더 */}
+      <div className="border-b border-green-500 pb-1 flex justify-between items-center">
+        <span className="text-xs font-bold font-mono text-green-700">[ MAIN_MENU_LIST ]</span>
+        <span className="text-[10px] opacity-40">TOTAL_ITEMS: 04</span>
       </div>
 
-      {/* 하단 버튼 영역 */}
-      <div className="mt-4 flex justify-end">
-        {isLoggedIn ? (
-          <button
-            onClick={handleLogout}
-            className="border border-green-500 px-4 py-2 text-xs font-bold hover:bg-green-500 hover:text-black transition-colors"
+      {/* 피드 리스트와 100% 동일한 버튼 리스트 디자인 */}
+      <div className="flex flex-col gap-1">
+        {menuItems.map((item) => (
+          <div 
+            key={item.id}
+            onClick={() => setLocation(item.path)}
+            className="flex flex-col border-b border-green-500/20 pb-2 cursor-pointer group"
           >
-            [ 접속 해제 (LOGOUT) ]
-          </button>
-        ) : (
-          <button
-            onClick={() => setLocation("/login")}
-            className="border border-green-500 px-4 py-2 text-xs font-bold hover:bg-green-500 hover:text-black transition-colors"
-          >
-            [ 시스템 접속 (LOGIN) ]
-          </button>
-        )}
+            <div className="flex justify-between items-center group-hover:bg-green-500/10 p-2 transition-all">
+              <div className="truncate text-sm md:text-base font-bold text-green-500">
+                <span className="opacity-50 mr-2 text-xs group-hover:text-black">[{item.cat}]</span>
+                {item.title}
+              </div>
+              <div className="text-[10px] opacity-40 self-center ml-2 group-hover:text-green-500">
+                {">>>"}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 시스템 하단 메시지 */}
+      <div className="mt-4 p-3 bg-green-900/10 border border-green-900/30 text-[10px] opacity-60 leading-relaxed text-center">
+        * 주의: 모든 접근 로그는 중앙 서버에 영구 기록됩니다.<br />
+        인증되지 않은 소스 코드는 시스템 마비의 원인이 될 수 있습니다.
       </div>
     </div>
   );
