@@ -2,11 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 브라우저 기본 여백 완전히 제거 */
-html, body, #root {
+/* 모든 브라우저 기본값 초기화 */
+* {
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
   width: 100%;
   height: 100%;
-  background-color: black; /* 배경색 고정 */
+  background-color: black;
+  color: #22c55e; /* green-500 */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  overflow-x: hidden;
 }
+
+/* 스크롤바 커스텀 (터미널 감성) */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: black; }
+::-webkit-scrollbar-thumb { background: #14532d; }
