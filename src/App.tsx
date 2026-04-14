@@ -80,9 +80,9 @@ export default function App() {
         
         <Gatekeeper user={user} loading={loading} />
 
-        {/* 💡 최상단 고정 배너: 슬로건 크기 20% 확대 (text-xs md:text-sm) */}
-        <div className="w-full border border-green-500 py-2 mb-6 shrink-0 bg-black">
-          <h2 className="text-center text-green-500 font-bold tracking-[0.4em] text-xs md:text-sm">
+        {/* 💡 최상단 고정 배너: 한 줄로 보이도록 크기 축소 및 줄바꿈 금지(whitespace-nowrap) 적용 */}
+        <div className="w-full border border-green-500 py-2 mb-6 shrink-0 bg-black flex justify-center overflow-hidden">
+          <h2 className="text-green-500 font-bold tracking-[0.2em] md:tracking-[0.4em] text-[9px] md:text-[11px] whitespace-nowrap">
             [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
           </h2>
         </div>
@@ -98,6 +98,7 @@ export default function App() {
           {user && (
             <button 
               onClick={() => supabase.auth.signOut()} 
+              style={{ backgroundColor: "black", color: "#22c55e" }}
               className="border border-green-800 px-2 py-0.5 hover:bg-red-900 hover:text-white transition-all text-[9px]"
             >
               [ LOGOUT ]
