@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Switch, Route, useLocation, Link } from "wouter";
-import { supabase } from "./lib/supabase";
+import { supabase } from "./lib/supabase";  
 
 import Home from "./pages/home";
 import Feed from "./pages/feed";
