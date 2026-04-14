@@ -53,19 +53,19 @@ function Gatekeeper() {
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-black text-green-500 font-mono flex justify-center selection:bg-green-500 selection:text-black">
-      {/* 💡 세로형 고정 레이아웃 (768px 제한) */}
-      <div className="w-full max-w-2xl flex flex-col items-center px-4 pt-4 pb-12">
+    // 💡 화면 가로 찢어짐 방지: flex-col과 max-w-2xl 사용
+    <div className="min-h-screen bg-black text-green-500 flex flex-col items-center selection:bg-green-500 selection:text-black">
+      <div className="w-full max-w-2xl flex flex-col min-h-screen px-4 pt-6 pb-12">
         <Gatekeeper />
 
-        {/* 1. 최상단 슬로건 배너 */}
-        <div className="w-full border-2 border-green-500 py-3 mb-10 text-center bg-black">
+        {/* 1. 최상단 슬로건 배너 (shrink-0으로 찌그러짐 방지) */}
+        <div className="w-full border-2 border-green-500 py-3 mb-8 text-center bg-black shrink-0">
           <h2 className="text-green-500 font-bold tracking-[0.5em] md:tracking-[1em] text-sm md:text-lg">
             [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
           </h2>
         </div>
 
-        {/* 2. 메인 화면 영역 */}
+        {/* 2. 메인 화면 영역 (가운데 정렬) */}
         <main className="w-full flex-grow flex flex-col items-center justify-center">
           <Switch>
             <Route path="/" component={Home} />
@@ -87,7 +87,8 @@ export default function App() {
           </Switch>
         </main>
 
-        <footer className="w-full mt-auto pt-8 text-center text-[10px] text-green-900 opacity-60">
+        {/* 3. 풋터 */}
+        <footer className="w-full pt-8 text-center text-[10px] text-green-900 opacity-60 shrink-0 mt-auto">
           V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </footer>
       </div>
