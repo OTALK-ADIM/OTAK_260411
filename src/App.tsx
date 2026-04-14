@@ -19,78 +19,62 @@ import PublicProfile from "./pages/public-profile";
 import Onboarding from "./pages/onboarding";
 import Pending from "./pages/pending";
 
-// 유저의 현재 보안 상태를 5단계로 명확히 정의합니다.
-type AuthState = "LOADING" | "UNAUTH" | "NEEDS_ONBOARDING" | "PENDING_APPROVAL" | "APPROVED";
+type AuthState = "LOADING" | "UNAUTH" | "ONBOARDING" | "PENDING" | "APPROVED";
 
 export default function App() {
   const [authState, setAuthState] = useState<AuthState>("LOADING");
   const [user, setUser] = useState<any>(null);
   const [location, setLocation] = useLocation();
 
-  // 💡 1단계: 유저의 로그인 정보나 DB 상태를 '감시'하고 '판단'만 합니다. (길 안내는 하지 않음)
+  // 1. 유저 상태 완벽 스캔
   useEffect(() => {
-    const checkUserAndProfile = async (currentUser: any) => {
-      if (!currentUser) {
+    const verifyUser = async (sessionUser: any) => {
+      if (!sessionUser) {
         setAuthState("UNAUTH");
         return;
       }
-      
-      // 로그인된 유저라면 프로필 DB를 뒤집니다.
+
+      // 프로필 DB 조회 (닉네임 유무 및 승인 여부)
       const { data: profile } = await supabase
         .from("profiles")
         .select("nickname, is_approved")
-        .eq("id", currentUser.id)
+        .eq("id", sessionUser.id)
         .maybeSingle();
 
-      if (!profile || !profile.nickname) {
-        setAuthState("NEEDS_ONBOARDING"); // 프로필 깡통 = 무조건 온보딩으로
+      if (!profile || !profile.nickname || profile.nickname.trim() === "") {
+        setAuthState("ONBOARDING"); // 닉네임 없으면 무조건 온보딩
       } else if (profile.is_approved === false) {
-        setAuthState("PENDING_APPROVAL"); // 승인 안 됨 = 펜딩으로
+        setAuthState("PENDING");    // 승인 안 났으면 대기소
       } else {
-        setAuthState("APPROVED");         // 정상 유저 = 피드로
+        setAuthState("APPROVED");   // 완벽히 승인된 유저
       }
     };
 
-    // 사이트 최초 진입 시 확인
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      checkUserAndProfile(data.user);
+    // 사이트 최초 접속 시 세션 확인
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      verifyUser(session?.user ?? null);
     });
 
-    // 🚨 핵심: 구글 로그인 완료 등 상태가 '변할 때마다' 무조건 다시 프로필을 검사합니다.
+    // 구글 로그인 등 상태 변화 발생 시 즉시 재검사
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      checkUserAndProfile(session?.user ?? null);
+      verifyUser(session?.user ?? null);
     });
 
     return () => authListener.subscription.unsubscribe();
   }, []);
 
-  // 💡 2단계: 위에서 판단된 AuthState를 바탕으로 '무자비하게' 경로를 통제합니다.
+  // 2. URL 주소창 강제 고정 (뒤로가기 방지용)
   useEffect(() => {
     if (authState === "LOADING") return;
-
-    if (authState === "UNAUTH") {
-      // 비로그인 유저는 홈(/)과 로그인(/login) 외엔 전부 쫓아냄
-      if (location !== "/" && location !== "/login") setLocation("/");
-    } 
-    else if (authState === "NEEDS_ONBOARDING") {
-      // 구글 가입 직후 등 닉네임 없는 유저는 무조건 온보딩 창에 가둠
-      if (location !== "/onboarding") setLocation("/onboarding");
-    } 
-    else if (authState === "PENDING_APPROVAL") {
-      // 승인 대기자는 펜딩 창에 가둠
-      if (location !== "/pending") setLocation("/pending");
-    } 
-    else if (authState === "APPROVED") {
-      // 승인된 정상 유저가 입구(홈, 로그인, 온보딩)에 서성이면 피드로 강제 입장시킴
-      if (location === "/" || location === "/login" || location === "/onboarding" || location === "/pending") {
-        setLocation("/feed");
-      }
-    }
+    if (authState === "UNAUTH" && location !== "/" && location !== "/login" && location !== "/signup") setLocation("/");
+    if (authState === "ONBOARDING" && location !== "/onboarding") setLocation("/onboarding");
+    if (authState === "PENDING" && location !== "/pending") setLocation("/pending");
+    if (authState === "APPROVED" && (location === "/" || location === "/login" || location === "/onboarding" || location === "/pending")) setLocation("/feed");
   }, [authState, location, setLocation]);
 
-  // 로딩 중일 때는 검문소 화면만 띄우고 뒤에 숨겨진 페이지를 아예 그리지 않습니다.
+  // 로딩 화면
   if (authState === "LOADING") {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center font-mono">
@@ -102,19 +86,18 @@ export default function App() {
     );
   }
 
-  // 검문이 완료된 상태일 때만 정상 화면 렌더링
   return (
-    <div className="min-h-screen w-full flex justify-center bg-black px-4 pt-6 pb-12">
+    <div className="min-h-screen w-full flex justify-center bg-black px-4 pt-6 pb-12 font-mono text-green-500 selection:bg-green-500 selection:text-black">
       <div className="w-full max-w-[800px] flex flex-col min-h-screen">
         
         {/* 상단 배너 */}
-        <div className="w-full border border-green-500 py-3 mb-6 flex justify-center items-center">
+        <div className="w-full border border-green-500 py-3 mb-6 flex justify-center items-center bg-black">
           <span className="text-green-500 text-base md:text-xl tracking-[0.8em] font-bold ml-[0.8em]">
             [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
           </span>
         </div>
 
-        {/* 상태 표시줄 및 로그인 버튼 */}
+        {/* 상태 표시줄 */}
         <div className="w-full flex justify-between items-end border-b border-green-900 pb-3 mb-10">
           <div className="flex gap-4 text-sm md:text-base tracking-wider">
             <span className="text-green-500">SYSTEM: CONNECTED</span>
@@ -122,7 +105,6 @@ export default function App() {
               USER: {user ? "ONLINE" : "OFFLINE"}
             </span>
           </div>
-          
           <div>
             {user ? (
               <button onClick={() => supabase.auth.signOut()} className="border border-green-500 px-3 py-1 hover:bg-green-500 hover:text-black">
@@ -130,7 +112,7 @@ export default function App() {
               </button>
             ) : (
               <Link href="/login">
-                <button className="border border-green-500 px-4 py-1 text-green-500 hover:bg-green-500 hover:text-black">
+                <button className="border border-green-500 px-4 py-1 hover:bg-green-500 hover:text-black">
                   [ 로 그 인 ]
                 </button>
               </Link>
@@ -138,29 +120,43 @@ export default function App() {
           </div>
         </div>
 
-        {/* 메인 화면 출력 */}
-        <main className="w-full flex-grow">
-          <Switch>
-            <Route path="/" component={Home} />
-            <Route path="/feed" component={Feed} />
-            <Route path="/profile" component={Profile} />
-            <Route path="/write" component={WritePost} />
-            <Route path="/chat-list" component={ChatList} />
-            <Route path="/chat/:id" component={ChatRoom} />
-            <Route path="/post/:id" component={PostDetail} />
-            <Route path="/edit/:id" component={PostEdit} />
-            <Route path="/admin" component={Admin} />
-            <Route path="/login" component={Login} />
-            <Route path="/signup" component={Signup} />
-            <Route path="/rules" component={Rules} />
-            <Route path="/profile/:userId" component={PublicProfile} />
-            <Route path="/onboarding" component={Onboarding} />
-            <Route path="/pending" component={Pending} />
-            <Route component={NotFound} />
-          </Switch>
+        {/* 💡 핵심: 물리적 렌더링 차단 구역 (여기서 무조건 걸러집니다) */}
+        <main className="w-full flex-grow flex flex-col items-center">
+          
+          {/* 비로그인 유저는 홈, 로그인, 회원가입만 볼 수 있음 */}
+          {authState === "UNAUTH" && (
+            <Switch>
+              <Route path="/" component={Home} />
+              <Route path="/login" component={Login} />
+              <Route path="/signup" component={Signup} />
+              <Route component={Home} />
+            </Switch>
+          )}
+
+          {/* 💡 닉네임 없는 유저는 무조건 온보딩 컴포넌트만 렌더링 (도망 불가) */}
+          {authState === "ONBOARDING" && <Onboarding />}
+
+          {/* 승인 대기자는 펜딩 화면만 렌더링 */}
+          {authState === "PENDING" && <Pending />}
+
+          {/* 완벽히 승인된 유저만 피드와 시스템 내부를 볼 수 있음 */}
+          {authState === "APPROVED" && (
+            <Switch>
+              <Route path="/feed" component={Feed} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/write" component={WritePost} />
+              <Route path="/chat-list" component={ChatList} />
+              <Route path="/chat/:id" component={ChatRoom} />
+              <Route path="/post/:id" component={PostDetail} />
+              <Route path="/edit/:id" component={PostEdit} />
+              <Route path="/admin" component={Admin} />
+              <Route path="/rules" component={Rules} />
+              <Route path="/profile/:userId" component={PublicProfile} />
+              <Route component={NotFound} />
+            </Switch>
+          )}
         </main>
 
-        {/* 풋터 */}
         <footer className="w-full border-t border-green-900/50 pt-2 mt-24 text-center text-xs text-green-800">
           V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </footer>
