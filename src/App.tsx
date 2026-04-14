@@ -19,77 +19,102 @@ import PublicProfile from "./pages/public-profile";
 import Onboarding from "./pages/onboarding";
 import Pending from "./pages/pending";
 
-function Gatekeeper() {
+function Gatekeeper({ user, loading }: { user: any, loading: boolean }) {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
-    let mounted = true;
-    const checkStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!mounted) return;
+    if (loading) return; // 세션 확인 중일 때는 아무것도 하지 않음
 
+    const checkRedirect = async () => {
       if (!user) {
-        if (location !== "/" && location !== "/login" && location !== "/signup") setLocation("/");
+        // 로그인 안 된 상태면 메인/로그인 외엔 접근 불가
+        if (location !== "/" && location !== "/login" && location !== "/signup") {
+          setLocation("/");
+        }
         return;
       }
 
+      // 로그인 된 경우 프로필 확인
       const { data: profile } = await supabase.from("profiles").select("is_approved").eq("id", user.id).maybeSingle();
-      if (!mounted) return;
 
       if (!profile) {
         if (location !== "/onboarding") setLocation("/onboarding");
       } else if (profile.is_approved === false) {
         if (location !== "/pending") setLocation("/pending");
-      } else if (location === "/" || location === "/login") {
-        setLocation("/feed");
+      } else {
+        // 승인된 유저가 메인/로그인에 있으면 피드로 이동
+        if (location === "/" || location === "/login") setLocation("/feed");
       }
     };
-    checkStatus();
-    return () => { mounted = false; };
-  }, [location]);
+
+    checkRedirect();
+  }, [user, loading, location, setLocation]);
 
   return null;
 }
 
 export default function App() {
-  return (
-    // 💡 화면 가로 찢어짐 방지: flex-col과 max-w-2xl 사용
-    <div className="min-h-screen bg-black text-green-500 flex flex-col items-center selection:bg-green-500 selection:text-black">
-      <div className="w-full max-w-2xl flex flex-col min-h-screen px-4 pt-6 pb-12">
-        <Gatekeeper />
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-        {/* 1. 최상단 슬로건 배너 (shrink-0으로 찌그러짐 방지) */}
-        <div className="w-full border-2 border-green-500 py-3 mb-8 text-center bg-black shrink-0">
-          <h2 className="text-green-500 font-bold tracking-[0.5em] md:tracking-[1em] text-sm md:text-lg">
+  useEffect(() => {
+    // 세션 초기화 및 감시
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => authListener.subscription.unsubscribe();
+  }, []);
+
+  return (
+    <div className="min-h-screen w-full bg-black flex justify-center overflow-x-hidden">
+      {/* 💡 세로형 폰 화면 감성으로 폭(max-w-[500px])을 고정 */}
+      <div className="w-full max-w-[500px] border-x border-green-900/30 min-h-screen flex flex-col p-4">
+        <Gatekeeper user={user} loading={loading} />
+
+        {/* 최상단 고정 슬로건 */}
+        <div className="w-full border-2 border-green-500 py-3 mb-6 shrink-0 bg-black shadow-[0_0_10px_rgba(34,197,94,0.2)]">
+          <h2 className="text-center text-green-500 font-bold tracking-[0.4em] text-xs md:text-sm">
             [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
           </h2>
         </div>
 
-        {/* 2. 메인 화면 영역 (가운데 정렬) */}
-        <main className="w-full flex-grow flex flex-col items-center justify-center">
-          <Switch>
-            <Route path="/" component={Home} />
-            <Route path="/feed" component={Feed} />
-            <Route path="/profile" component={Profile} />
-            <Route path="/write" component={WritePost} />
-            <Route path="/chat-list" component={ChatList} />
-            <Route path="/chat/:id" component={ChatRoom} />
-            <Route path="/post/:id" component={PostDetail} />
-            <Route path="/edit/:id" component={PostEdit} />
-            <Route path="/admin" component={Admin} />
-            <Route path="/login" component={Login} />
-            <Route path="/signup" component={Signup} />
-            <Route path="/rules" component={Rules} />
-            <Route path="/profile/:userId" component={PublicProfile} />
-            <Route path="/onboarding" component={Onboarding} />
-            <Route path="/pending" component={Pending} />
-            <Route component={NotFound} />
-          </Switch>
+        {/* 메인 콘텐츠 영역 */}
+        <main className="flex-grow flex flex-col items-center justify-center">
+          {loading ? (
+            <div className="text-green-500 animate-pulse font-bold tracking-widest">
+              CHECKING_CREDENTIALS...
+            </div>
+          ) : (
+            <Switch>
+              <Route path="/" component={Home} />
+              <Route path="/feed" component={Feed} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/write" component={WritePost} />
+              <Route path="/chat-list" component={ChatList} />
+              <Route path="/chat/:id" component={ChatRoom} />
+              <Route path="/post/:id" component={PostDetail} />
+              <Route path="/edit/:id" component={PostEdit} />
+              <Route path="/admin" component={Admin} />
+              <Route path="/login" component={Login} />
+              <Route path="/signup" component={Signup} />
+              <Route path="/rules" component={Rules} />
+              <Route path="/profile/:userId" component={PublicProfile} />
+              <Route path="/onboarding" component={Onboarding} />
+              <Route path="/pending" component={Pending} />
+              <Route component={NotFound} />
+            </Switch>
+          )}
         </main>
 
-        {/* 3. 풋터 */}
-        <footer className="w-full pt-8 text-center text-[10px] text-green-900 opacity-60 shrink-0 mt-auto">
-          V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
+        <footer className="mt-auto py-6 text-center text-[9px] text-green-900 tracking-tighter opacity-50">
+          V. 1.8.8 - PROTOCOL: NEO_GEEK - STATUS: WAITING...
         </footer>
       </div>
     </div>

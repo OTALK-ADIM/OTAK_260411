@@ -2,10 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 💡 404 에러 해결: 안정적인 버전의 네오둥근모 링크로 교체 */
+/* 💡 404 에러 해결: 가장 안정적인 네오둥근모 서버 주소 */
 @font-face {
     font-family: 'NeoDunggeunmo';
-    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/NeoDunggeunmoPro-Regular.woff') format('woff');
+    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/NeoDunggeunmo.woff') format('woff');
     font-weight: normal;
     font-style: normal;
 }
@@ -14,17 +14,18 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'NeoDunggeunmo', monospace !important;
+  /* 💡 폰트 강제 적용 */
+  font-family: 'NeoDunggeunmo', 'Courier New', Courier, monospace !important;
 }
 
 body {
   background-color: black;
   color: #22c55e;
-  overflow-x: hidden;
+  overflow-x: hidden; /* 가로 스크롤 절대 방지 */
 }
 
-button {
-  background: transparent;
-  outline: none;
-  cursor: pointer;
+/* 텍스트 가시성 강화 */
+::selection {
+  background-color: #22c55e;
+  color: black;
 }
