@@ -22,10 +22,11 @@ export default function Home() {
           :: AUTHENTICATION_REQUIRED ::
         </div>
         
-        {/* 💡 흰색 라인을 초록색으로: bg-green-500 강제 적용 */}
+        {/* 💡 하얀색 깡통 버튼 절대 방어: style 속성으로 배경(초록)과 글자색(검정) 강제 고정 */}
         <button 
           onClick={() => setLocation("/login")}
-          className="w-full border-2 border-green-500 bg-green-500 text-black py-5 text-2xl md:text-3xl font-bold hover:bg-green-400 hover:shadow-[0_0_30px_rgba(34,197,94,0.8)] transition-all active:scale-95 cursor-pointer"
+          style={{ backgroundColor: "#22c55e", color: "black", borderColor: "#22c55e" }}
+          className="w-full border-2 py-5 text-2xl md:text-3xl font-bold hover:opacity-80 transition-all shadow-[0_0_30px_rgba(34,197,94,0.6)] active:scale-95 cursor-pointer"
         >
           [ 로 그 인 ]
         </button>
