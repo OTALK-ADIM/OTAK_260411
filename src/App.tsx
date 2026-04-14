@@ -19,109 +19,127 @@ import PublicProfile from "./pages/public-profile";
 import Onboarding from "./pages/onboarding";
 import Pending from "./pages/pending";
 
+// 유저의 현재 보안 상태를 5단계로 명확히 정의합니다.
+type AuthState = "LOADING" | "UNAUTH" | "NEEDS_ONBOARDING" | "PENDING_APPROVAL" | "APPROVED";
+
 export default function App() {
+  const [authState, setAuthState] = useState<AuthState>("LOADING");
   const [user, setUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true); // 💡 로딩 상태 추가
   const [location, setLocation] = useLocation();
 
+  // 💡 1단계: 유저의 로그인 정보나 DB 상태를 '감시'하고 '판단'만 합니다. (길 안내는 하지 않음)
   useEffect(() => {
-    let mounted = true;
-
-    const initializeAuth = async () => {
-      // 1. 현재 접속한 유저 정보 가져오기
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!mounted) return;
-      setUser(user);
-
-      // 2. 로그인 안 했으면 홈/로그인/가입 외엔 접근 차단
-      if (!user) {
-        if (location !== "/" && location !== "/login" && location !== "/signup") {
-          setLocation("/");
-        }
-        setIsLoading(false);
+    const checkUserAndProfile = async (currentUser: any) => {
+      if (!currentUser) {
+        setAuthState("UNAUTH");
         return;
       }
-
-      // 3. 로그인 유저의 프로필(승인 상태) 확인
+      
+      // 로그인된 유저라면 프로필 DB를 뒤집니다.
       const { data: profile } = await supabase
         .from("profiles")
         .select("nickname, is_approved")
-        .eq("id", user.id)
+        .eq("id", currentUser.id)
         .maybeSingle();
 
-      if (!mounted) return;
-
-      // 4. 경로 유효성 검사 (철통 검문)
       if (!profile || !profile.nickname) {
-        // 닉네임 없으면 무조건 온보딩으로
-        if (location !== "/onboarding") setLocation("/onboarding");
+        setAuthState("NEEDS_ONBOARDING"); // 프로필 깡통 = 무조건 온보딩으로
       } else if (profile.is_approved === false) {
-        // 승인 안 됐으면 무조건 펜딩으로
-        if (location !== "/pending") setLocation("/pending");
+        setAuthState("PENDING_APPROVAL"); // 승인 안 됨 = 펜딩으로
       } else {
-        // 승인 완료된 유저는 메인/로그인/온보딩에 있을 이유가 없으므로 피드로
-        if (location === "/" || location === "/login" || location === "/onboarding" || location === "/pending") {
-          setLocation("/feed");
-        }
+        setAuthState("APPROVED");         // 정상 유저 = 피드로
       }
-
-      setIsLoading(false); // 💡 검문 완료 후 로딩 해제
     };
 
-    initializeAuth();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (_event === 'SIGNED_OUT') {
-        setLocation("/");
-        setIsLoading(false);
-      }
+    // 사이트 최초 진입 시 확인
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      checkUserAndProfile(data.user);
     });
 
-    return () => {
-      mounted = false;
-      authListener.subscription.unsubscribe();
-    };
-  }, [location, setLocation]);
+    // 🚨 핵심: 구글 로그인 완료 등 상태가 '변할 때마다' 무조건 다시 프로필을 검사합니다.
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      checkUserAndProfile(session?.user ?? null);
+    });
 
-  // 💡 검문 중일 때 보여줄 터미널 로딩 화면
-  if (isLoading) {
+    return () => authListener.subscription.unsubscribe();
+  }, []);
+
+  // 💡 2단계: 위에서 판단된 AuthState를 바탕으로 '무자비하게' 경로를 통제합니다.
+  useEffect(() => {
+    if (authState === "LOADING") return;
+
+    if (authState === "UNAUTH") {
+      // 비로그인 유저는 홈(/)과 로그인(/login) 외엔 전부 쫓아냄
+      if (location !== "/" && location !== "/login") setLocation("/");
+    } 
+    else if (authState === "NEEDS_ONBOARDING") {
+      // 구글 가입 직후 등 닉네임 없는 유저는 무조건 온보딩 창에 가둠
+      if (location !== "/onboarding") setLocation("/onboarding");
+    } 
+    else if (authState === "PENDING_APPROVAL") {
+      // 승인 대기자는 펜딩 창에 가둠
+      if (location !== "/pending") setLocation("/pending");
+    } 
+    else if (authState === "APPROVED") {
+      // 승인된 정상 유저가 입구(홈, 로그인, 온보딩)에 서성이면 피드로 강제 입장시킴
+      if (location === "/" || location === "/login" || location === "/onboarding" || location === "/pending") {
+        setLocation("/feed");
+      }
+    }
+  }, [authState, location, setLocation]);
+
+  // 로딩 중일 때는 검문소 화면만 띄우고 뒤에 숨겨진 페이지를 아예 그리지 않습니다.
+  if (authState === "LOADING") {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center font-mono">
-        <div className="text-green-500 animate-pulse text-xl">
+        <div className="text-green-500 animate-pulse text-xl text-center">
           [ SYSTEM_INITIALIZING... ]<br/>
-          <span className="text-xs opacity-50 tracking-widest">CHECKING_SECURITY_PROTOCOL...</span>
+          <span className="text-xs opacity-50 tracking-widest mt-2 block">CHECKING_SECURITY_PROTOCOL...</span>
         </div>
       </div>
     );
   }
 
+  // 검문이 완료된 상태일 때만 정상 화면 렌더링
   return (
-    <div className="min-h-screen w-full flex justify-center bg-black text-green-500 font-mono selection:bg-green-500 selection:text-black px-4">
-      <div style={{ maxWidth: "768px", width: "100%", margin: "0 auto" }} className="flex flex-col min-h-screen pt-8 pb-10">
+    <div className="min-h-screen w-full flex justify-center bg-black px-4 pt-6 pb-12">
+      <div className="w-full max-w-[800px] flex flex-col min-h-screen">
         
         {/* 상단 배너 */}
-        <div className="border-2 border-green-500 py-3 text-center font-bold tracking-[0.5em] md:tracking-[1em] mb-8 bg-black">
-          [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
+        <div className="w-full border border-green-500 py-3 mb-6 flex justify-center items-center">
+          <span className="text-green-500 text-base md:text-xl tracking-[0.8em] font-bold ml-[0.8em]">
+            [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
+          </span>
         </div>
 
-        {/* 유저 상태 바 */}
-        <div className="flex justify-between items-center text-xs mb-10 border-b border-green-900 pb-4">
-          <div className="flex gap-4 items-center">
-            <span className="text-green-500 font-bold">SYSTEM: CONNECTED</span>
-            <span className={`font-bold ${user ? "text-blue-500" : "text-green-700"}`}>
+        {/* 상태 표시줄 및 로그인 버튼 */}
+        <div className="w-full flex justify-between items-end border-b border-green-900 pb-3 mb-10">
+          <div className="flex gap-4 text-sm md:text-base tracking-wider">
+            <span className="text-green-500">SYSTEM: CONNECTED</span>
+            <span className={user ? "text-blue-500" : "text-red-500"}>
               USER: {user ? "ONLINE" : "OFFLINE"}
             </span>
           </div>
-          {user && (
-            <button onClick={() => supabase.auth.signOut()} className="text-[11px] border border-green-900 px-3 py-1 hover:bg-red-900 hover:text-white transition-all bg-black">
-              [ LOGOUT ]
-            </button>
-          )}
+          
+          <div>
+            {user ? (
+              <button onClick={() => supabase.auth.signOut()} className="border border-green-500 px-3 py-1 hover:bg-green-500 hover:text-black">
+                [ LOGOUT ]
+              </button>
+            ) : (
+              <Link href="/login">
+                <button className="border border-green-500 px-4 py-1 text-green-500 hover:bg-green-500 hover:text-black">
+                  [ 로 그 인 ]
+                </button>
+              </Link>
+            )}
+          </div>
         </div>
 
-        {/* 메인 콘텐츠 영역 (검문 완료된 유저만 여기까지 도달) */}
-        <main className="w-full flex-grow flex flex-col items-center">
+        {/* 메인 화면 출력 */}
+        <main className="w-full flex-grow">
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/feed" component={Feed} />
@@ -142,7 +160,8 @@ export default function App() {
           </Switch>
         </main>
 
-        <footer className="w-full pt-10 pb-6 text-center text-[10px] text-green-900 opacity-80 mt-auto">
+        {/* 풋터 */}
+        <footer className="w-full border-t border-green-900/50 pt-2 mt-24 text-center text-xs text-green-800">
           V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </footer>
       </div>
