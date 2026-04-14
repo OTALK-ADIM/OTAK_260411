@@ -6,43 +6,35 @@ export default function Login() {
       provider: 'google',
       options: { redirectTo: window.location.origin }
     });
-
-    if (error) {
-      alert("로그인 중 문제가 발생했습니다.");
-    }
+    if (error) alert("접속 에러: " + error.message);
   };
 
   return (
-    <div className="w-full flex flex-col items-center mt-4">
-      
-      {/* 인증 경고 박스 */}
-      <div className="w-full border border-green-500 py-10 flex flex-col items-center justify-center mb-10 shadow-[0_0_15px_rgba(34,197,94,0.1)] bg-black">
-        <h2 className="text-3xl md:text-4xl text-green-400 tracking-widest mb-3">
-          USER_AUTHENTICATION
-        </h2>
-        <p className="text-xs tracking-widest text-red-500 animate-pulse">
-          WARNING: UNAUTHORIZED ACCESS IS PROHIBITED
-        </p>
+    <div className="w-full flex flex-col items-center gap-12">
+      <div className="w-full border border-green-500/50 p-10 text-center bg-[#0a0a0a] shadow-[0_0_20px_rgba(0,255,0,0.05)]">
+        <h2 className="text-3xl font-bold text-green-500 mb-4">:: USER_AUTH ::</h2>
+        
+        {/* 💡 구글 로그인 안내 코멘트 */}
+        <div className="text-sm text-green-700 leading-relaxed font-bold border-t border-green-900/50 pt-4 mt-4">
+          [오타쿠 아카이브]는 <span className="text-green-400">Google 계정</span>을 통해<br />
+          유저의 신원을 안전하게 식별합니다.<br />
+          아래 버튼을 눌러 구글 인증을 진행하십시오.
+        </div>
       </div>
 
-      {/* 💡 구글 로그인 안내 코멘트 */}
-      <div className="w-full max-w-lg border border-dashed border-green-700 p-8 mb-12 bg-green-950/10 text-center">
-        <p className="text-green-500 text-lg mb-4 tracking-widest">:: 구글 계정 동기화 ::</p>
-        <p className="text-green-600 text-sm leading-loose">
-          안전한 입국 심사 및 데이터 보존을 위해 <br />
-          <span className="text-white border-b border-white px-1">Google 계정</span> 인증이 필요합니다.<br />
-          아래 버튼을 눌러 시스템에 접속해 주십시오.
-        </p>
-      </div>
-
-      {/* 구글 접속 버튼 */}
-      <button
+      <button 
         onClick={handleGoogleLogin}
-        className="border border-green-500 bg-black text-green-400 px-10 py-3 text-xl tracking-widest hover:bg-green-500 hover:text-black transition-all shadow-[0_0_10px_rgba(34,197,94,0.3)]"
+        className="border-2 border-green-500 bg-black text-green-500 px-12 py-4 text-xl font-bold hover:bg-green-500 hover:text-black transition-all shadow-[0_0_15px_rgba(34,197,94,0.3)]"
       >
         [ 구글 계정으로 접속 ]
       </button>
 
+      <button 
+        onClick={() => window.history.back()}
+        className="text-xs text-green-900 hover:text-green-500 underline"
+      >
+        돌아가기
+      </button>
     </div>
   );
 }

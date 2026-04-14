@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Switch, Route, useLocation, Link } from "wouter";
-import { supabase } from "./lib/supabase";  
+import { Switch, Route, useLocation } from "wouter";
+import { supabase } from "./lib/supabase";
 
 import Home from "./pages/home";
 import Feed from "./pages/feed";
@@ -24,7 +24,7 @@ function Gatekeeper() {
 
   useEffect(() => {
     let mounted = true;
-    const checkUserStatus = async () => {
+    const checkStatus = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!mounted) return;
 
@@ -40,13 +40,11 @@ function Gatekeeper() {
         if (location !== "/onboarding") setLocation("/onboarding");
       } else if (profile.is_approved === false) {
         if (location !== "/pending") setLocation("/pending");
-      } else {
-        if (location === "/" || location === "/login" || location === "/onboarding" || location === "/pending") {
-          setLocation("/feed");
-        }
+      } else if (location === "/" || location === "/login") {
+        setLocation("/feed");
       }
     };
-    checkUserStatus();
+    checkStatus();
     return () => { mounted = false; };
   }, [location]);
 
@@ -54,55 +52,21 @@ function Gatekeeper() {
 }
 
 export default function App() {
-  const [user, setUser] = useState<any>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => authListener.subscription.unsubscribe();
-  }, []);
-
   return (
-    // 💡 화면 중앙 정렬 찌그러짐 버그 완벽 해결
-    <div className="min-h-screen w-full flex justify-center bg-black px-4 pt-6 pb-12">
-      <div className="w-full max-w-[800px] flex flex-col">
+    <div className="min-h-screen bg-black text-green-500 font-mono flex justify-center selection:bg-green-500 selection:text-black">
+      {/* 💡 세로형 고정 레이아웃 (768px 제한) */}
+      <div className="w-full max-w-2xl flex flex-col items-center px-4 pt-4 pb-12">
         <Gatekeeper />
 
-        {/* 1. 상단 배너 (2번째 이미지 완벽 복구) */}
-        <div className="w-full border border-green-500 py-3 mb-6 flex justify-center items-center">
-          <span className="text-green-500 text-base md:text-xl tracking-[0.8em] font-bold ml-[0.8em]">
+        {/* 1. 최상단 슬로건 배너 */}
+        <div className="w-full border-2 border-green-500 py-3 mb-10 text-center bg-black">
+          <h2 className="text-green-500 font-bold tracking-[0.5em] md:tracking-[1em] text-sm md:text-lg">
             [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
-          </span>
+          </h2>
         </div>
 
-        {/* 2. 상태 표시줄 및 로그인 버튼 (2번째 이미지 완벽 복구) */}
-        <div className="w-full flex justify-between items-end border-b border-green-900 pb-3 mb-10">
-          <div className="flex gap-4 text-sm md:text-base tracking-wider">
-            <span className="text-green-500">SYSTEM: CONNECTED</span>
-            <span className={user ? "text-blue-500" : "text-red-500"}>
-              USER: {user ? "ONLINE" : "OFFLINE"}
-            </span>
-          </div>
-          
-          <div>
-            {user ? (
-              <button onClick={() => supabase.auth.signOut()} className="border border-green-500 px-3 py-1 hover:bg-green-500 hover:text-black">
-                [ LOGOUT ]
-              </button>
-            ) : (
-              <Link href="/login">
-                <button className="border border-green-500 px-4 py-1 text-green-500 hover:bg-green-500 hover:text-black">
-                  [ 로 그 인 ]
-                </button>
-              </Link>
-            )}
-          </div>
-        </div>
-
-        {/* 3. 메인 화면 출력 */}
-        <main className="w-full">
+        {/* 2. 메인 화면 영역 */}
+        <main className="w-full flex-grow flex flex-col items-center justify-center">
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/feed" component={Feed} />
@@ -123,8 +87,7 @@ export default function App() {
           </Switch>
         </main>
 
-        {/* 4. 풋터 */}
-        <footer className="w-full border-t border-green-900/50 pt-2 mt-24 text-center text-xs text-green-800">
+        <footer className="w-full mt-auto pt-8 text-center text-[10px] text-green-900 opacity-60">
           V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </footer>
       </div>
