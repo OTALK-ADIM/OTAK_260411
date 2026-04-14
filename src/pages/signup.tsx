@@ -1,65 +1,71 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { supabase } from "../lib/supabase";
 
 export default function Signup() {
   const [, setLocation] = useLocation();
-  const [userId, setUserId] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [nickname, setNickname] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [showFullText, setShowFullText] = useState(false);
 
-  const handleSignup = () => {
-    if (!userId.trim() || !password.trim() || !nickname.trim()) {
-      alert("[시스템 경고] 모든 정보를 입력해 주십시오.");
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!consent) {
+      alert("[시스템 경고] 개인정보 수집 및 이용에 동의해야 가입이 가능합니다.");
       return;
     }
 
-    // 기존 유저 데이터 가져오기 (없으면 빈 배열)
-    const existingUsers = JSON.parse(localStorage.getItem("nerd_users") || "[]");
-
-    // 아이디 중복 검사
-    if (existingUsers.some((u: any) => u.id === userId)) {
-      alert("[시스템 경고] 이미 존재하는 아이디입니다.");
-      return;
+    const { error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      alert(`[통신 에러] 가입 실패: ${error.message}`);
+    } else {
+      alert("[시스템] 가입이 승인되었습니다. 프로필 등록 단계로 이동합니다.");
+      setLocation("/onboarding");
     }
-
-    // 새 유저 등록
-    const newUser = { id: userId, password, nickname };
-    existingUsers.push(newUser);
-    localStorage.setItem("nerd_users", JSON.stringify(existingUsers));
-
-    alert(`[시스템] 환영합니다, ${nickname}님. 회원가입이 완료되었습니다.`);
-    setLocation("/login"); // 가입 완료 후 로그인 페이지로 이동
   };
 
   return (
-    <div className="w-full flex flex-col gap-6 mt-6 max-w-sm mx-auto">
-      <div className="border-b-2 border-green-500 pb-2 text-center font-bold tracking-widest text-xl">
-        [ 신 규 요 원 등 록 ]
+    <div className="w-full max-w-md mx-auto flex flex-col gap-6 font-mono">
+      <div className="border-b-2 border-green-500 pb-2 text-center font-bold text-xl">
+        [ NEW_USER_REGISTRATION ]
       </div>
 
-      <div className="flex flex-col gap-4 bg-[#0a0a0a] p-6 border border-green-500/50">
+      <form onSubmit={handleSignup} className="flex flex-col gap-6 bg-[#0a0a0a] p-6 border border-green-500/50 shadow-[0_0_15px_rgba(0,255,0,0.1)]">
         <div className="flex flex-col gap-1">
-          <label className="text-xs opacity-70 font-mono">ID</label>
-          <input type="text" value={userId} onChange={(e) => setUserId(e.target.value)} className="bg-transparent border border-green-500 text-green-500 p-2 focus:outline-none font-mono" />
+          <label className="text-[10px] opacity-70">EMAIL_ADDRESS</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-transparent border border-green-500 text-green-500 p-2 focus:outline-none" />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs opacity-70 font-mono">PASSWORD</label>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-transparent border border-green-500 text-green-500 p-2 focus:outline-none font-mono" />
+          <label className="text-[10px] opacity-70">PASSWORD</label>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="bg-transparent border border-green-500 text-green-500 p-2 focus:outline-none" />
         </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs opacity-70 font-mono">NICKNAME (CODENAME)</label>
-          <input type="text" value={nickname} onChange={(e) => setNickname(e.target.value)} className="bg-transparent border border-green-500 text-green-500 p-2 focus:outline-none font-mono" />
-        </div>
-      </div>
 
-      <div className="flex justify-between mt-2">
-        <button onClick={() => setLocation("/")} className="border border-green-500 px-4 py-1 hover:bg-green-500 hover:text-black transition-colors">
-          [ 취소 ]
+        {/* 개인정보 동의 영역 */}
+        <div className="border-t border-green-900/50 pt-4 flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} id="privacy-check" className="accent-green-500 w-4 h-4" />
+            <label htmlFor="privacy-check" className="text-xs">
+              개인정보 수집 및 이용에 동의합니다.
+            </label>
+            <button type="button" onClick={() => setShowFullText(!showFullText)} className="text-[10px] underline opacity-50 hover:opacity-100">
+              [전문보기]
+            </button>
+          </div>
+
+          {showFullText && (
+            <div className="bg-black border border-green-900 p-3 text-[10px] leading-relaxed max-h-32 overflow-y-auto text-green-700">
+              제 1조 (수집 항목): 닉네임, 프로필 사진, 자기소개... <br />
+              제 2조 (이용 목적): 서비스 내 유저 식별 및 커뮤니티 관리... <br />
+              제 3조 (보유 기간): 회원 탈퇴 시 즉시 파기...
+            </div>
+          )}
+        </div>
+
+        <button type="submit" className="bg-green-500 text-black font-bold py-3 hover:bg-green-400 transition-colors">
+          [ 계 정 생 성 ]
         </button>
-        <button onClick={handleSignup} className="bg-green-500 text-black px-4 py-1 font-bold hover:bg-green-400 transition-colors">
-          [ 등 록 ]
-        </button>
-      </div>
+      </form>
     </div>
   );
 }
