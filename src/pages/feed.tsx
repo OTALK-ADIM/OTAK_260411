@@ -1,196 +1,83 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation } from "wouter";
-import { supabase } from "../lib/supabase"; // 💡 Supabase 연결 클라이언트 임포트
+import { useEffect, useState } from "react";
+import { useLocation, Link } from "wouter";
+import { supabase } from "../lib/supabase";
 
 export default function Feed() {
   const [, setLocation] = useLocation();
-  const [activeTab, setActiveTab] = useState("최신글");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("ALL");
-  
-  // 무한 스크롤 및 데이터 관리
-  const [visibleCount, setVisibleCount] = useState(30);
-  const loaderRef = useRef<HTMLDivElement>(null);
-  const [allPosts, setAllPosts] = useState<any[]>([]);
-  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [isApproved, setIsApproved] = useState<boolean>(false);
+  const [posts, setPosts] = useState<any[]>([]);
 
-  // 💡 1. 서버(Supabase)에서 실제 게시글 데이터 가져오기
   useEffect(() => {
-    const fetchPosts = async () => {
-      setIsLoading(true);
-      
-      // posts 테이블에서 모든 데이터를 가져오되, ID 역순(최신순)으로 정렬
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .order('id', { ascending: false });
-
-      if (error) {
-        console.error("[시스템 에러] 데이터 수신 실패:", error.message);
-      } else if (data) {
-        setAllPosts(data);
-
-        // 카테고리별 개수 실시간 집계 (서버 데이터 기준)
-        const counts: Record<string, number> = { ALL: data.length };
-        data.forEach(p => {
-          const cat = p.category || "일반";
-          counts[cat] = (counts[cat] || 0) + 1;
-        });
-        setCategoryCounts(counts);
+    const fetchUserStatusAndPosts = async () => {
+      // 1. 현재 유저의 승인 상태 확인
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_approved")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (profile) setIsApproved(profile.is_approved);
       }
-      setIsLoading(false);
+
+      // 2. 게시글 목록 불러오기 (임시 더미 로직, 실제 posts 테이블 연동 필요)
+      const { data: fetchedPosts } = await supabase.from("posts").select("*").order("created_at", { ascending: false });
+      if (fetchedPosts) setPosts(fetchedPosts);
     };
 
-    fetchPosts();
+    fetchUserStatusAndPosts();
   }, []);
 
-  // 💡 2. 무한 스크롤 감지 (기존 로직 유지)
-  const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
-    const target = entries[0];
-    if (target.isIntersecting && !isLoading) {
-      setVisibleCount((prev) => prev + 20);
-    }
-  }, [isLoading]);
-
-  useEffect(() => {
-    const option = { root: null, rootMargin: "20px", threshold: 0 };
-    const observer = new IntersectionObserver(handleObserver, option);
-    if (loaderRef.current) observer.observe(loaderRef.current);
-    return () => observer.disconnect();
-  }, [handleObserver]);
-
-  // 💡 3. 필터링 및 검색 로직 (서버 데이터를 브라우저에서 필터링)
-  let filteredPosts = allPosts.filter(post => {
-    const matchesCategory = selectedCategory === "ALL" || post.category === selectedCategory;
-    
-    // 제목, 태그 중 검색어 포함 여부 확인
-    const matchesSearch = 
-      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (post.tags && post.tags.some((t: string) => t.toLowerCase().includes(searchQuery.toLowerCase())));
-    
-    // 관리자가 삭제한 글 제외 (localStorage 유지)
-    const deletedSaved = localStorage.getItem("deleted_posts");
-    const deletedIds = deletedSaved ? JSON.parse(deletedSaved) : [];
-    
-    return matchesCategory && matchesSearch && !deletedIds.includes(post.id);
-  });
-
-  // 정렬 로직 (탭 선택에 따른 결과)
-  if (activeTab === "베스트") filteredPosts.sort((a, b) => b.likes - a.likes);
-  else if (activeTab === "랜덤") filteredPosts.sort(() => Math.random() - 0.5);
-
-  const displayedPosts = filteredPosts.slice(0, visibleCount);
-
-  // 999+ 변환 함수
-  const formatCount = (count: number) => count > 999 ? "999+" : count;
-
-  // 날짜 변환 함수 (Supabase의 timestamptz를 MM/DD 형식으로)
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
-  };
-
   return (
-    <div className="w-full flex flex-col gap-4 relative font-mono">
-      {/* 플로팅 버튼 (TOP / MAIN) */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
-        <button 
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="bg-black border border-green-500 text-green-500 w-12 h-12 text-[10px] font-bold hover:bg-green-500 hover:text-black shadow-[0_0_10px_rgba(34,197,94,0.3)]"
-        >
-          TOP
-        </button>
-        <button 
-          onClick={() => setLocation("/")}
-          className="bg-black border border-green-500 text-green-500 w-12 h-12 text-[10px] font-bold hover:bg-green-500 hover:text-black shadow-[0_0_10px_rgba(34,197,94,0.3)]"
-        >
-          MAIN
-        </button>
-      </div>
-
-      {/* 검색 바 */}
-      <div className="flex border border-green-500 p-1 bg-[#0a0a0a]">
-        <span className="px-2 self-center text-xs opacity-70">SEARCH_CMD:</span>
-        <input 
-          type="text"
-          placeholder="데이터 검색어 입력..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="bg-transparent text-green-500 p-1 flex-1 focus:outline-none"
-        />
-      </div>
-
-      {/* 카테고리 영역 (999+ 로직 적용) */}
-      <div className="flex gap-2 overflow-x-auto pb-2 text-xs scrollbar-hide">
-        {Object.entries(categoryCounts).map(([cat, count]) => (
-          <button
-            key={cat}
-            onClick={() => { setSelectedCategory(cat); setVisibleCount(30); }}
-            className={`border px-2 py-1 whitespace-nowrap transition-all ${
-              selectedCategory === cat ? "bg-green-500 text-black font-bold" : "border-green-500/50 hover:bg-green-900/30"
-            }`}
-          >
-            {cat} ({formatCount(count)})
-          </button>
-        ))}
-      </div>
-
-      {/* 탭 & 글쓰기 버튼 */}
-      <div className="flex justify-between items-center border-b border-green-500 pb-2">
-        <div className="flex gap-2">
-          {["최신글", "베스트", "랜덤"].map(tab => (
-            <button key={tab} onClick={() => { setActiveTab(tab); setVisibleCount(30); }} className={`px-2 text-sm ${activeTab === tab ? "bg-green-500 text-black font-bold" : "hover:text-green-300"}`}>
-              {tab === "최신글" ? ">최신<" : `[${tab}]`}
-            </button>
-          ))}
-        </div>
-        <button onClick={() => setLocation("/write")} className="border border-green-500 px-3 py-1 text-xs font-bold hover:bg-green-500 hover:text-black transition-colors">
-          [+새 글 기록]
-        </button>
-      </div>
-
-      {/* 목록 출력 */}
-      <div className="flex flex-col gap-3 min-h-[400px]">
-        {isLoading ? (
-          <div className="flex justify-center items-center py-20 text-green-500 animate-pulse">
-            [ REQUESTING_DATA_FROM_SERVER... ]
-          </div>
-        ) : displayedPosts.length === 0 ? (
-          <div className="text-center py-20 opacity-30 text-sm">NO DATA FOUND.</div>
-        ) : (
-          displayedPosts.map((post) => (
-            <div key={post.id} className="flex flex-col border-b border-green-500/20 pb-2">
-              <div onClick={() => setLocation(`/post/${post.id}`)} className="flex justify-between cursor-pointer hover:bg-green-500/10 p-1 transition-all">
-                <div className="truncate text-sm md:text-base font-bold">
-                  <span className="opacity-50 mr-2 text-xs">[{post.category || "일반"}]</span>
-                  {post.title}
-                </div>
-                <div className="text-[10px] opacity-60 self-center ml-2 flex items-center gap-2">
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setLocation(`/profile/${post.author}`); }} 
-                    className="hover:text-white hover:underline"
-                  >
-                    {post.author}
-                  </button>
-                  <span>{formatDate(post.created_at)}</span>
-                </div>
-              </div>
-              {/* 태그 표시 */}
-              <div className="flex gap-2 px-1">
-                {post.tags?.map((tag: string) => (
-                  <span key={tag} className="text-[9px] opacity-40">#{tag}</span>
-                ))}
-              </div>
-            </div>
-          ))
-        )}
+    <div className="w-full flex flex-col gap-6">
+      
+      {/* 상단 컨트롤 패널 */}
+      <div className="flex flex-col md:flex-row justify-between items-center border border-green-900 p-4 bg-black gap-4">
+        <h2 className="text-xl font-bold tracking-widest text-green-500">
+          [ DATA_FEED ]
+        </h2>
         
-        {/* 무한 스크롤 트리거 */}
-        {!isLoading && (
-          <div ref={loaderRef} className="h-10 flex items-center justify-center text-[10px] opacity-30">
-            {displayedPosts.length < filteredPosts.length ? "[ DATA LOADING... ]" : "[ END OF ARCHIVE ]"}
+        {/* 💡 승인 상태에 따른 글쓰기 버튼 노출 분기 */}
+        {isApproved ? (
+          <button 
+            onClick={() => setLocation("/write")}
+            className="border border-green-500 bg-green-950/30 px-6 py-2 text-green-400 hover:bg-green-500 hover:text-black transition-colors font-bold"
+          >
+            + 새 데이터 기록
+          </button>
+        ) : (
+          <div className="text-xs text-red-500 border border-red-900 bg-red-950/20 px-4 py-2 text-center animate-pulse">
+            글 작성 권한이 없습니다. (입국 심사 중)
           </div>
+        )}
+      </div>
+
+      {/* 심사 중인 유저를 위한 대문짝만한 안내 배너 */}
+      {!isApproved && (
+        <div className="w-full border-2 border-dashed border-red-900 p-6 text-center bg-red-950/10">
+          <p className="text-red-500 font-bold mb-2 tracking-widest">:: TEMPORARY ACCESS GRANTED ::</p>
+          <p className="text-red-400 text-sm leading-loose">
+            현재 임시 거주증으로 시스템을 열람하고 있습니다.<br/>
+            게시글 및 댓글 작성 기능은 <span className="text-white">관리자의 최종 승인 이후</span> 활성화됩니다.
+          </p>
+        </div>
+      )}
+
+      {/* 게시글 목록 출력 영역 */}
+      <div className="flex flex-col gap-4">
+        {posts.length === 0 ? (
+          <div className="text-center py-20 text-green-800 border border-green-900/50">
+            NO_DATA_FOUND
+          </div>
+        ) : (
+          posts.map(post => (
+            <Link key={post.id} href={`/post/${post.id}`}>
+              <div className="border border-green-900 p-4 hover:border-green-500 transition-colors cursor-pointer bg-black group">
+                <h3 className="text-green-400 text-lg group-hover:text-green-300">{post.title}</h3>
+                <p className="text-green-700 text-xs mt-2">{new Date(post.created_at).toLocaleString()}</p>
+              </div>
+            </Link>
+          ))
         )}
       </div>
     </div>

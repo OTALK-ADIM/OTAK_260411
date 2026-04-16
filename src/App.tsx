@@ -17,7 +17,6 @@ import Signup from "./pages/signup";
 import Rules from "./pages/rules";
 import PublicProfile from "./pages/public-profile";
 import Onboarding from "./pages/onboarding";
-import Pending from "./pages/pending";
 
 type AuthState = "LOADING" | "UNAUTH" | "ONBOARDING" | "PENDING" | "APPROVED";
 
@@ -33,24 +32,17 @@ export default function App() {
         return;
       }
 
-      // 💡 핵심: 닉네임뿐만 아니라 "profile_img_url(사진)"까지 무조건 불러옵니다.
       const { data: profile } = await supabase
         .from("profiles")
         .select("nickname, profile_img_url, is_approved")
         .eq("id", sessionUser.id)
         .maybeSingle();
 
-      // 💡 철통 방어 1: 프로필이 없거나, 닉네임이 비었거나, '사진'이 없으면 무조건 온보딩으로 납치!
-      // (구글이 닉네임을 몰래 채워도, 사진이 없으므로 절대 통과 불가)
       if (!profile || !profile.nickname || !profile.profile_img_url) {
         setAuthState("ONBOARDING"); 
-      } 
-      // 💡 철통 방어 2: 승인 값이 명확하게 true가 아니면(null이나 false면) 무조건 펜딩!
-      else if (profile.is_approved !== true) {
+      } else if (profile.is_approved !== true) {
         setAuthState("PENDING");    
-      } 
-      // 모든 조건을 만족한 진짜 승인자
-      else {
+      } else {
         setAuthState("APPROVED");   
       }
     };
@@ -68,13 +60,12 @@ export default function App() {
     return () => authListener.subscription.unsubscribe();
   }, []);
 
-  // URL 주소창 강제 고정 (해커 방지용)
+  // 💡 라우팅 강제 고정 (PENDING 유저도 피드로 진입 허용)
   useEffect(() => {
     if (authState === "LOADING") return;
     if (authState === "UNAUTH" && location !== "/" && location !== "/login" && location !== "/signup") setLocation("/");
     if (authState === "ONBOARDING" && location !== "/onboarding") setLocation("/onboarding");
-    if (authState === "PENDING" && location !== "/pending") setLocation("/pending");
-    if (authState === "APPROVED" && (location === "/" || location === "/login" || location === "/onboarding" || location === "/pending")) setLocation("/feed");
+    if ((authState === "PENDING" || authState === "APPROVED") && (location === "/" || location === "/login" || location === "/onboarding")) setLocation("/feed");
   }, [authState, location, setLocation]);
 
   if (authState === "LOADING") {
@@ -98,12 +89,20 @@ export default function App() {
           </span>
         </div>
 
-        <div className="w-full flex justify-between items-end border-b border-green-900 pb-3 mb-10">
-          <div className="flex gap-4 text-sm md:text-base tracking-wider">
-            <span className="text-green-500">SYSTEM: CONNECTED</span>
-            <span className={user ? "text-blue-500" : "text-red-500"}>
-              USER: {user ? "ONLINE" : "OFFLINE"}
-            </span>
+        <div className="w-full flex justify-between items-end border-b border-green-900 pb-3 mb-8">
+          <div className="flex flex-col gap-1">
+            <div className="flex gap-4 text-sm md:text-base tracking-wider">
+              <span className="text-green-500">SYSTEM: CONNECTED</span>
+              <span className={user ? "text-blue-500" : "text-red-500"}>
+                USER: {user ? "ONLINE" : "OFFLINE"}
+              </span>
+            </div>
+            {/* 💡 심사 중인 유저에게만 띄우는 경고 뱃지 */}
+            {authState === "PENDING" && (
+              <span className="text-[10px] text-red-500 animate-pulse font-bold tracking-widest mt-1">
+                :: RESTRICTED MODE (심사 진행 중) ::
+              </span>
+            )}
           </div>
           <div>
             {user ? (
@@ -130,20 +129,18 @@ export default function App() {
             </Switch>
           )}
 
-          {/* 💡 구글 로그인자 중 '사진'이 없는 사람은 무조건 여기로 갇힙니다 */}
           {authState === "ONBOARDING" && <Onboarding />}
 
-          {authState === "PENDING" && <Pending />}
-
-          {authState === "APPROVED" && (
+          {/* 💡 승인 대기자 & 승인 완료자 모두 내부 컨텐츠 열람 가능 */}
+          {(authState === "PENDING" || authState === "APPROVED") && (
             <Switch>
               <Route path="/feed" component={Feed} />
               <Route path="/profile" component={Profile} />
               <Route path="/write" component={WritePost} />
-              <Route path="/chat-list" component={ChatList} />
-              <Route path="/chat/:id" component={ChatRoom} />
               <Route path="/post/:id" component={PostDetail} />
               <Route path="/edit/:id" component={PostEdit} />
+              <Route path="/chat-list" component={ChatList} />
+              <Route path="/chat/:id" component={ChatRoom} />
               <Route path="/admin" component={Admin} />
               <Route path="/rules" component={Rules} />
               <Route path="/profile/:userId" component={PublicProfile} />
