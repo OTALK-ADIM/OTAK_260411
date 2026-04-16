@@ -54,6 +54,20 @@ export default function Onboarding() {
 
       if (profileError) throw profileError;
 
+      alert("[시스템] 가입 데이터 전송 완료. 임시 거주증을 발급하여 피드로 진입합니다.");
+      
+      // 💡 여기가 핵심입니다! setLocation 대신 강제 새로고침을 통해 피드로 꽂아버립니다.
+      window.location.href = "/feed";
+
+    } catch (error: any) {
+      alert(`[시스템 에러] 처리 중 오류 발생: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+      if (profileError) throw profileError;
+
       alert("[시스템] 가입 데이터 전송 완료. 관리자의 입국 심사를 기다려 주십시오.");
       setLocation("/pending");
 
