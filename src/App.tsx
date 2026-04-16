@@ -77,7 +77,7 @@ export default function App() {
     <div className="min-h-screen w-full flex justify-center bg-black px-4 pt-4 pb-12 font-mono text-green-500 selection:bg-green-500 selection:text-black">
       <div className="w-full max-w-[800px] flex flex-col min-h-screen">
         
-        <header className="w-full flex flex-col mb-8">
+        <header className="w-full flex flex-col mb-6 md:mb-10">
           <div className="w-full border border-green-500 py-2 flex justify-center items-center bg-black mb-3">
             <span className="text-green-500 text-sm md:text-base tracking-[0.5em] font-bold">
               [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
@@ -99,7 +99,6 @@ export default function App() {
               )}
             </div>
             <div>
-              {/* 💡 button 태그를 div로 교체하여 흰색 테두리 방지 */}
               {user ? (
                 <div onClick={() => supabase.auth.signOut()} className="border border-green-500 bg-black px-3 py-1 text-green-500 hover:bg-green-500 hover:text-black transition-none text-xs cursor-pointer inline-block font-bold">
                   [ LOGOUT ]
@@ -114,21 +113,22 @@ export default function App() {
             </div>
           </div>
 
+          {/* 💡 배너 색상 오류 완벽 수정: 기본 네온 초록색으로 고정 */}
           <Link href="/">
-            <div className="w-full border-2 border-green-500 py-8 md:py-10 flex flex-col items-center justify-center bg-black shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden cursor-pointer group">
+            <div className="w-full border-2 border-green-500 py-10 md:py-12 flex flex-col items-center justify-center bg-black shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden cursor-pointer">
               <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,0,0.03)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none"></div>
-              {/* 💡 흰색으로 변하던 hover 효과 제거! 초록색으로 고정 */}
-              <h1 className="text-5xl md:text-7xl text-green-400 tracking-[0.2em] mb-2 drop-shadow-[0_0_15px_rgba(34,197,94,0.6)] font-bold relative z-10 group-hover:drop-shadow-[0_0_25px_rgba(34,197,94,0.9)] transition-all">
+              <h1 className="text-6xl md:text-8xl text-green-500 tracking-[0.2em] mb-2 drop-shadow-[0_0_15px_rgba(34,197,94,0.6)] font-bold relative z-10">
                 OTALK
               </h1>
-              <p className="text-[9px] md:text-xs text-green-600 tracking-[0.4em] uppercase relative z-10 font-bold">
+              <p className="text-[10px] md:text-sm text-green-600 tracking-[0.4em] uppercase relative z-10 font-bold">
                 [ Neo_Geek_Network_System ]
               </p>
             </div>
           </Link>
         </header>
 
-        <main className="w-full flex-grow flex flex-col items-center">
+        {/* 💡 컨텐츠가 넉넉하게 들어갈 수 있도록 여백 및 구조 조정 */}
+        <main className="w-full flex-grow flex flex-col items-center justify-start">
           {authState === "UNAUTH" && (
             <Switch>
               <Route path="/" component={Home} />
@@ -158,7 +158,7 @@ export default function App() {
           )}
         </main>
 
-        <footer className="w-full border-t border-green-900/50 pt-2 mt-24 text-center text-xs text-green-800">
+        <footer className="w-full border-t border-green-900/50 pt-4 mt-20 text-center text-xs text-green-800">
           V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </footer>
       </div>
