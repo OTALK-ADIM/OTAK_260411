@@ -31,13 +31,8 @@ export default function App() {
         setAuthState("UNAUTH");
         return;
       }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("nickname, profile_img_url, is_approved")
-        .eq("id", sessionUser.id)
-        .maybeSingle();
-
+      const { data: profile } = await supabase.from("profiles").select("nickname, profile_img_url, is_approved").eq("id", sessionUser.id).maybeSingle();
+      
       if (!profile || !profile.nickname || !profile.profile_img_url) {
         setAuthState("ONBOARDING"); 
       } else if (profile.is_approved !== true) {
@@ -60,22 +55,11 @@ export default function App() {
     return () => authListener.subscription.unsubscribe();
   }, []);
 
-  // 💡 라우팅 강제 고정 로직 수정
   useEffect(() => {
     if (authState === "LOADING") return;
-    
-    if (authState === "UNAUTH" && location !== "/" && location !== "/login" && location !== "/signup") {
-      setLocation("/");
-    }
-    
-    if (authState === "ONBOARDING" && location !== "/onboarding") {
-      setLocation("/onboarding");
-    }
-    
-    // 💡 핵심: 승인자/대기자가 로그인창 같은 곳을 서성이면 피드가 아니라 "메인 화면(/)"으로 보냅니다!
-    if ((authState === "PENDING" || authState === "APPROVED") && (location === "/login" || location === "/onboarding" || location === "/signup")) {
-      setLocation("/");
-    }
+    if (authState === "UNAUTH" && location !== "/" && location !== "/login" && location !== "/signup") setLocation("/");
+    if (authState === "ONBOARDING" && location !== "/onboarding") setLocation("/onboarding");
+    if ((authState === "PENDING" || authState === "APPROVED") && (location === "/login" || location === "/onboarding" || location === "/signup")) setLocation("/");
   }, [authState, location, setLocation]);
 
   if (authState === "LOADING") {
@@ -90,44 +74,67 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen w-full flex justify-center bg-black px-4 pt-6 pb-12 font-mono text-green-500 selection:bg-green-500 selection:text-black">
+    <div className="min-h-screen w-full flex justify-center bg-black px-4 pt-4 pb-12 font-mono text-green-500 selection:bg-green-500 selection:text-black">
       <div className="w-full max-w-[800px] flex flex-col min-h-screen">
         
-        <div className="w-full border border-green-500 py-3 mb-6 flex justify-center items-center bg-black">
-          <span className="text-green-500 text-base md:text-xl tracking-[0.8em] font-bold ml-[0.8em]">
-            [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
-          </span>
-        </div>
+        {/* ==================================================== */}
+        {/* 💡 모든 페이지에서 유지되는 고정 헤더 (상태창 + 배너) */}
+        {/* ==================================================== */}
+        <header className="w-full flex flex-col mb-8">
+          {/* 1. 최상단 상태바 */}
+          <div className="w-full border border-green-500 py-2 flex justify-center items-center bg-black mb-3">
+            <span className="text-green-500 text-sm md:text-base tracking-[0.5em] font-bold">
+              [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
+            </span>
+          </div>
 
-        <div className="w-full flex justify-between items-end border-b border-green-900 pb-3 mb-8">
-          <div className="flex flex-col gap-1">
-            <div className="flex gap-4 text-sm md:text-base tracking-wider">
-              <span className="text-green-500">SYSTEM: CONNECTED</span>
-              <span className={user ? "text-blue-500" : "text-red-500"}>
-                USER: {user ? "ONLINE" : "OFFLINE"}
-              </span>
+          {/* 2. 유저 접속 상태바 */}
+          <div className="w-full flex justify-between items-end border-b border-green-900 pb-2 mb-4">
+            <div className="flex flex-col gap-1">
+              <div className="flex gap-4 text-xs md:text-sm tracking-widest text-green-500 font-bold">
+                <span>SYSTEM: CONNECTED</span>
+                <span className={user ? "text-blue-400" : "text-red-500"}>
+                  USER: {user ? "ONLINE" : "OFFLINE"}
+                </span>
+              </div>
+              {authState === "PENDING" && (
+                <span className="text-[10px] text-red-500 animate-pulse font-bold tracking-widest mt-1">
+                  :: RESTRICTED MODE (심사 진행 중) ::
+                </span>
+              )}
             </div>
-            {authState === "PENDING" && (
-              <span className="text-[10px] text-red-500 animate-pulse font-bold tracking-widest mt-1">
-                :: RESTRICTED MODE (심사 진행 중) ::
-              </span>
-            )}
-          </div>
-          <div>
-            {user ? (
-              <button onClick={() => supabase.auth.signOut()} className="border border-green-500 px-3 py-1 hover:bg-green-500 hover:text-black transition-colors">
-                [ LOGOUT ]
-              </button>
-            ) : (
-              <Link href="/login">
-                <button className="border border-green-500 px-4 py-1 hover:bg-green-500 hover:text-black transition-colors">
-                  [ 로 그 인 ]
+            <div>
+              {user ? (
+                <button onClick={() => supabase.auth.signOut()} className="border border-green-500 bg-black px-3 py-1 text-green-500 hover:bg-green-500 hover:text-black transition-none text-xs appearance-none rounded-none cursor-pointer">
+                  [ LOGOUT ]
                 </button>
-              </Link>
-            )}
+              ) : (
+                <Link href="/login">
+                  <div className="border border-green-500 bg-black px-4 py-1 text-green-500 hover:bg-green-500 hover:text-black transition-none text-xs appearance-none rounded-none cursor-pointer inline-block">
+                    [ 로 그 인 ]
+                  </div>
+                </Link>
+              )}
+            </div>
           </div>
-        </div>
 
+          {/* 3. OTALK 메인 배너 (클릭 시 홈으로 이동) */}
+          <Link href="/">
+            <div className="w-full border-2 border-green-500 py-8 md:py-10 flex flex-col items-center justify-center bg-black shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden cursor-pointer group">
+              <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,0,0.03)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none"></div>
+              <h1 className="text-5xl md:text-7xl text-green-400 tracking-[0.2em] mb-2 drop-shadow-[0_0_15px_rgba(34,197,94,0.6)] font-bold relative z-10 group-hover:text-white transition-colors">
+                OTALK
+              </h1>
+              <p className="text-[9px] md:text-xs text-green-600 tracking-[0.4em] uppercase relative z-10 font-bold group-hover:text-green-400">
+                [ Neo_Geek_Network_System ]
+              </p>
+            </div>
+          </Link>
+        </header>
+
+        {/* ==================================================== */}
+        {/* 💡 하단은 URL에 따라 바뀌는 내용물 (페이지 영역) */}
+        {/* ==================================================== */}
         <main className="w-full flex-grow flex flex-col items-center">
           {authState === "UNAUTH" && (
             <Switch>
@@ -142,7 +149,6 @@ export default function App() {
 
           {(authState === "PENDING" || authState === "APPROVED") && (
             <Switch>
-              {/* 💡 로그인 상태에서도 Home 경로 접근을 열어줍니다 */}
               <Route path="/" component={Home} />
               <Route path="/feed" component={Feed} />
               <Route path="/profile" component={Profile} />
