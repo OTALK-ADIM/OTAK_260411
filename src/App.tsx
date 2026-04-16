@@ -25,7 +25,6 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [location, setLocation] = useLocation();
 
-  // 💡 현재 URL 경로에 따라 페이지 타이틀을 반환하는 함수
   const getPageTitle = (path: string) => {
     if (path === "/") return "MAIN_MENU";
     if (path === "/login") return "USER_AUTHENTICATION";
@@ -132,7 +131,8 @@ export default function App() {
           <Link href="/">
             <div className="w-full border-2 border-green-500 py-10 md:py-12 flex flex-col items-center justify-center bg-black shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden cursor-pointer">
               <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,0,0.03)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none"></div>
-              <h1 className="text-6xl md:text-8xl text-green-500 tracking-[0.2em] mb-2 drop-shadow-[0_0_15px_rgba(34,197,94,0.6)] font-bold relative z-10">
+              {/* 💡 강제 초록색 고정! 보라색이나 다른 색이 들어올 수 없게 막음 */}
+              <h1 className="text-6xl md:text-8xl text-green-500 tracking-[0.2em] mb-2 drop-shadow-[0_0_15px_rgba(34,197,94,0.6)] font-bold relative z-10 !text-green-500">
                 OTALK
               </h1>
               <p className="text-[10px] md:text-sm text-green-600 tracking-[0.4em] uppercase relative z-10 font-bold">
@@ -141,15 +141,13 @@ export default function App() {
             </div>
           </Link>
           
-          {/* 💡 요청하신 기능: 현재 어떤 페이지인지 출력해주는 공통 타이틀 영역 */}
           <div className="w-full flex justify-center items-center mt-6">
-            <h2 className="text-2xl md:text-3xl text-green-500 font-bold tracking-[0.1em] drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]">
+            <h2 className="text-2xl md:text-3xl text-green-500 font-bold tracking-[0.1em] drop-shadow-[0_0_8px_rgba(34,197,94,0.6)] bg-black px-4">
               {getPageTitle(location)}
             </h2>
           </div>
         </header>
 
-        {/* 💡 컨텐츠가 자연스럽게 위에서부터 아래로 흐르도록 배치 */}
         <main className="w-full flex-grow flex flex-col">
           {authState === "UNAUTH" && (
             <Switch>
