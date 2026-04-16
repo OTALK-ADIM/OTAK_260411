@@ -60,12 +60,22 @@ export default function App() {
     return () => authListener.subscription.unsubscribe();
   }, []);
 
-  // 💡 라우팅 강제 고정 (PENDING 유저도 피드로 진입 허용)
+  // 💡 라우팅 강제 고정 로직 수정
   useEffect(() => {
     if (authState === "LOADING") return;
-    if (authState === "UNAUTH" && location !== "/" && location !== "/login" && location !== "/signup") setLocation("/");
-    if (authState === "ONBOARDING" && location !== "/onboarding") setLocation("/onboarding");
-    if ((authState === "PENDING" || authState === "APPROVED") && (location === "/" || location === "/login" || location === "/onboarding")) setLocation("/feed");
+    
+    if (authState === "UNAUTH" && location !== "/" && location !== "/login" && location !== "/signup") {
+      setLocation("/");
+    }
+    
+    if (authState === "ONBOARDING" && location !== "/onboarding") {
+      setLocation("/onboarding");
+    }
+    
+    // 💡 핵심: 승인자/대기자가 로그인창 같은 곳을 서성이면 피드가 아니라 "메인 화면(/)"으로 보냅니다!
+    if ((authState === "PENDING" || authState === "APPROVED") && (location === "/login" || location === "/onboarding" || location === "/signup")) {
+      setLocation("/");
+    }
   }, [authState, location, setLocation]);
 
   if (authState === "LOADING") {
@@ -97,7 +107,6 @@ export default function App() {
                 USER: {user ? "ONLINE" : "OFFLINE"}
               </span>
             </div>
-            {/* 💡 심사 중인 유저에게만 띄우는 경고 뱃지 */}
             {authState === "PENDING" && (
               <span className="text-[10px] text-red-500 animate-pulse font-bold tracking-widest mt-1">
                 :: RESTRICTED MODE (심사 진행 중) ::
@@ -131,9 +140,10 @@ export default function App() {
 
           {authState === "ONBOARDING" && <Onboarding />}
 
-          {/* 💡 승인 대기자 & 승인 완료자 모두 내부 컨텐츠 열람 가능 */}
           {(authState === "PENDING" || authState === "APPROVED") && (
             <Switch>
+              {/* 💡 로그인 상태에서도 Home 경로 접근을 열어줍니다 */}
+              <Route path="/" component={Home} />
               <Route path="/feed" component={Feed} />
               <Route path="/profile" component={Profile} />
               <Route path="/write" component={WritePost} />
