@@ -129,13 +129,13 @@ export default function App() {
           </div>
 
           <Link href="/">
-            <div className="w-full border-2 border-green-500 py-10 md:py-12 flex flex-col items-center justify-center bg-black shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden cursor-pointer">
+            <div className="w-full border-2 border-green-500 py-10 md:py-12 flex flex-col items-center justify-center bg-black shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden cursor-pointer" style={{ textDecoration: 'none' }}>
               <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,0,0.03)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none"></div>
-              {/* 💡 강제 초록색 고정! 보라색이나 다른 색이 들어올 수 없게 막음 */}
-              <h1 className="text-6xl md:text-8xl text-green-500 tracking-[0.2em] mb-2 drop-shadow-[0_0_15px_rgba(34,197,94,0.6)] font-bold relative z-10 !text-green-500">
+              {/* 💡 브라우저 기본 보라색 링크를 무시하도록 !text-green-500 및 inline style 적용 */}
+              <h1 className="text-6xl md:text-8xl !text-green-500 tracking-[0.2em] mb-2 drop-shadow-[0_0_15px_rgba(34,197,94,0.6)] font-bold relative z-10" style={{ color: '#22c55e' }}>
                 OTALK
               </h1>
-              <p className="text-[10px] md:text-sm text-green-600 tracking-[0.4em] uppercase relative z-10 font-bold">
+              <p className="text-[10px] md:text-sm !text-green-600 tracking-[0.4em] uppercase relative z-10 font-bold" style={{ color: '#16a34a' }}>
                 [ Neo_Geek_Network_System ]
               </p>
             </div>

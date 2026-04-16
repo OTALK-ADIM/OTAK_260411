@@ -31,23 +31,24 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        /* 💡 테두리를 싹 없애고 큼직한 텍스트 리스트 형태로 재복구 */
-        <div className="w-full max-w-xl mx-auto flex flex-col gap-12 md:gap-16 text-green-500 font-bold mt-12 md:mt-20 px-6 md:px-0">
+        /* 💡 gap-12로 리스트 간격을 엄청나게 벌리고 화면 정중앙으로 밀어넣습니다 */
+        <div className="w-full max-w-xl mx-auto flex flex-col gap-12 md:gap-16 text-green-500 font-bold mt-12 md:mt-20 px-4 md:px-0">
           
-          <div onClick={() => setLocation("/rules")} className="text-left text-2xl md:text-4xl hover:text-green-300 cursor-pointer flex items-center transition-none group">
-            <span className="mr-4 text-green-400 group-hover:text-green-300">▶</span> 0. NERD_PROTOCOL (규칙)
+          {/* 💡 text-3xl로 글자를 매우 크게 키우고 py-6으로 클릭 영역도 높였습니다. */}
+          <div onClick={() => setLocation("/rules")} className="text-left text-3xl md:text-5xl hover:text-green-300 cursor-pointer flex items-center transition-none group py-6">
+            <span className="mr-6 text-green-400 group-hover:text-green-300">▶</span> 0. NERD_PROTOCOL (규칙)
           </div>
 
-          <div onClick={() => setLocation("/feed")} className="text-left text-2xl md:text-4xl hover:text-green-300 cursor-pointer flex items-center transition-none group">
-            <span className="mr-4 text-green-400 group-hover:text-green-300">▶</span> 1. 활동 모집 피드
+          <div onClick={() => setLocation("/feed")} className="text-left text-3xl md:text-5xl hover:text-green-300 cursor-pointer flex items-center transition-none group py-6">
+            <span className="mr-6 text-green-400 group-hover:text-green-300">▶</span> 1. 활동 모집 피드
           </div>
 
-          <div onClick={() => setLocation("/chat-list")} className="text-left text-2xl md:text-4xl hover:text-green-300 cursor-pointer flex items-center transition-none group">
-            <span className="mr-4 text-green-400 group-hover:text-green-300">▶</span> 2. 비밀 대화함 (수락전)
+          <div onClick={() => setLocation("/chat-list")} className="text-left text-3xl md:text-5xl hover:text-green-300 cursor-pointer flex items-center transition-none group py-6">
+            <span className="mr-6 text-green-400 group-hover:text-green-300">▶</span> 2. 비밀 대화함 (수락전)
           </div>
 
-          <div onClick={() => setLocation("/profile")} className="text-left text-2xl md:text-4xl hover:text-green-300 cursor-pointer flex items-center transition-none group">
-            <span className="mr-4 text-green-400 group-hover:text-green-300">▶</span> 3. 나의 데이터 (프로필)
+          <div onClick={() => setLocation("/profile")} className="text-left text-3xl md:text-5xl hover:text-green-300 cursor-pointer flex items-center transition-none group py-6">
+            <span className="mr-6 text-green-400 group-hover:text-green-300">▶</span> 3. 나의 데이터 (프로필)
           </div>
           
         </div>
