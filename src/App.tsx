@@ -77,18 +77,13 @@ export default function App() {
     <div className="min-h-screen w-full flex justify-center bg-black px-4 pt-4 pb-12 font-mono text-green-500 selection:bg-green-500 selection:text-black">
       <div className="w-full max-w-[800px] flex flex-col min-h-screen">
         
-        {/* ==================================================== */}
-        {/* 💡 모든 페이지에서 유지되는 고정 헤더 (상태창 + 배너) */}
-        {/* ==================================================== */}
         <header className="w-full flex flex-col mb-8">
-          {/* 1. 최상단 상태바 */}
           <div className="w-full border border-green-500 py-2 flex justify-center items-center bg-black mb-3">
             <span className="text-green-500 text-sm md:text-base tracking-[0.5em] font-bold">
               [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
             </span>
           </div>
 
-          {/* 2. 유저 접속 상태바 */}
           <div className="w-full flex justify-between items-end border-b border-green-900 pb-2 mb-4">
             <div className="flex flex-col gap-1">
               <div className="flex gap-4 text-xs md:text-sm tracking-widest text-green-500 font-bold">
@@ -104,13 +99,14 @@ export default function App() {
               )}
             </div>
             <div>
+              {/* 💡 button 태그를 div로 교체하여 흰색 테두리 방지 */}
               {user ? (
-                <button onClick={() => supabase.auth.signOut()} className="border border-green-500 bg-black px-3 py-1 text-green-500 hover:bg-green-500 hover:text-black transition-none text-xs appearance-none rounded-none cursor-pointer">
+                <div onClick={() => supabase.auth.signOut()} className="border border-green-500 bg-black px-3 py-1 text-green-500 hover:bg-green-500 hover:text-black transition-none text-xs cursor-pointer inline-block font-bold">
                   [ LOGOUT ]
-                </button>
+                </div>
               ) : (
                 <Link href="/login">
-                  <div className="border border-green-500 bg-black px-4 py-1 text-green-500 hover:bg-green-500 hover:text-black transition-none text-xs appearance-none rounded-none cursor-pointer inline-block">
+                  <div className="border border-green-500 bg-black px-4 py-1 text-green-500 hover:bg-green-500 hover:text-black transition-none text-xs cursor-pointer inline-block font-bold">
                     [ 로 그 인 ]
                   </div>
                 </Link>
@@ -118,23 +114,20 @@ export default function App() {
             </div>
           </div>
 
-          {/* 3. OTALK 메인 배너 (클릭 시 홈으로 이동) */}
           <Link href="/">
             <div className="w-full border-2 border-green-500 py-8 md:py-10 flex flex-col items-center justify-center bg-black shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden cursor-pointer group">
               <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,0,0.03)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none"></div>
-              <h1 className="text-5xl md:text-7xl text-green-400 tracking-[0.2em] mb-2 drop-shadow-[0_0_15px_rgba(34,197,94,0.6)] font-bold relative z-10 group-hover:text-white transition-colors">
+              {/* 💡 흰색으로 변하던 hover 효과 제거! 초록색으로 고정 */}
+              <h1 className="text-5xl md:text-7xl text-green-400 tracking-[0.2em] mb-2 drop-shadow-[0_0_15px_rgba(34,197,94,0.6)] font-bold relative z-10 group-hover:drop-shadow-[0_0_25px_rgba(34,197,94,0.9)] transition-all">
                 OTALK
               </h1>
-              <p className="text-[9px] md:text-xs text-green-600 tracking-[0.4em] uppercase relative z-10 font-bold group-hover:text-green-400">
+              <p className="text-[9px] md:text-xs text-green-600 tracking-[0.4em] uppercase relative z-10 font-bold">
                 [ Neo_Geek_Network_System ]
               </p>
             </div>
           </Link>
         </header>
 
-        {/* ==================================================== */}
-        {/* 💡 하단은 URL에 따라 바뀌는 내용물 (페이지 영역) */}
-        {/* ==================================================== */}
         <main className="w-full flex-grow flex flex-col items-center">
           {authState === "UNAUTH" && (
             <Switch>
