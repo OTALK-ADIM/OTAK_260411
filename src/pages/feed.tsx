@@ -30,12 +30,13 @@ export default function Feed() {
         </h2>
         
         {isApproved ? (
-          <button 
+          /* 💡 button 태그를 div로 교체! */
+          <div 
             onClick={() => setLocation("/write")}
-            className="border-2 border-green-500 bg-black text-green-400 px-6 py-2 hover:bg-green-500 hover:text-black transition-none font-bold tracking-widest cursor-pointer"
+            className="border-2 border-green-500 bg-black text-green-400 px-6 py-2 hover:bg-green-500 hover:text-black transition-none font-bold tracking-widest cursor-pointer inline-block text-center"
           >
             [ + 새 데이터 기록 ]
-          </button>
+          </div>
         ) : (
           <div className="text-xs text-red-500 border border-red-900 bg-red-950/20 px-4 py-2 text-center animate-pulse">
             ** 글 작성 권한 제한됨 (입국 심사 중) **
