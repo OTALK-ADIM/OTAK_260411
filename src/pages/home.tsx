@@ -1,42 +1,54 @@
 import { useLocation } from "wouter";
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
 
 export default function Home() {
   const [, setLocation] = useLocation();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => authListener.subscription.unsubscribe();
+  }, []);
 
   return (
-    <div className="w-full flex flex-col items-center justify-center gap-16 py-10">
+    <div className="w-full flex flex-col items-center mt-4">
       
-      {/* OTALK 메인 로고 섹션 */}
-      <div className="flex flex-col items-center text-center">
-        <h1 className="text-[6.5rem] md:text-[8.5rem] font-bold text-green-500 tracking-[0.15em] mb-4 drop-shadow-[0_0_25px_rgba(34,197,94,0.9)]">
+      {/* 💡 타이틀 로고 (공통 노출) */}
+      <div className="w-full border border-green-500 py-12 md:py-16 flex flex-col items-center justify-center shadow-[0_0_15px_rgba(34,197,94,0.15)] bg-black mb-12">
+        <h1 className="text-7xl md:text-[8rem] text-green-400 tracking-[0.2em] mb-4 drop-shadow-[0_0_15px_rgba(34,197,94,0.8)] font-bold">
           OTALK
         </h1>
-        <div className="text-base md:text-lg text-green-500 font-bold tracking-[0.4em] bg-green-950/30 px-6 py-2 border border-green-500/30">
-          진짜들을 위한 장소
-        </div>
+        <p className="text-[10px] md:text-xs text-green-600 tracking-[0.4em] uppercase">
+          NEO_GEEK_NETWORK_SYSTEM
+        </p>
       </div>
 
-      {/* 로그인 섹션 */}
-      <div className="flex flex-col items-center gap-6 w-full px-2">
-        <div className="text-[10px] md:text-xs text-green-500 animate-pulse font-bold tracking-[0.3em] drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]">
-          :: AUTHENTICATION_REQUIRED ::
+      {/* 💡 로그인 여부에 따른 출력 분기 */}
+      {!user ? (
+        <div className="flex flex-col items-center gap-6 mt-4">
+          <p className="text-xs md:text-sm text-green-500 tracking-widest font-bold">
+            :: RESTRICTED AREA - AUTHENTICATION REQUIRED ::
+          </p>
+          <button 
+            onClick={() => setLocation("/login")}
+            className="border-2 border-green-500 bg-black text-green-400 px-12 py-4 text-2xl tracking-[0.3em] hover:bg-green-500 hover:text-black transition-all shadow-[0_0_15px_rgba(34,197,94,0.4)] font-bold"
+          >
+            [ S T A R T ]
+          </button>
         </div>
-        
-        {/* 💡 하얀색 깡통 버튼 절대 방어: style 속성으로 배경(초록)과 글자색(검정) 강제 고정 */}
-        <button 
-          onClick={() => setLocation("/login")}
-          style={{ backgroundColor: "#22c55e", color: "black", borderColor: "#22c55e" }}
-          className="w-full border-2 py-5 text-2xl md:text-3xl font-bold hover:opacity-80 transition-all shadow-[0_0_30px_rgba(34,197,94,0.6)] active:scale-95 cursor-pointer"
-        >
-          [ 로 그 인 ]
-        </button>
-
-        <div className="mt-4 flex flex-col gap-1 text-[10px] md:text-[11px] text-green-600 opacity-70 text-center font-bold">
-          <p>* 비인가자의 접근을 엄격히 금지합니다.</p>
-          <p>* 모든 접속 로그는 시스템에 실시간 기록됩니다.</p>
+      ) : (
+        <div className="w-full max-w-sm flex flex-col gap-8 text-xl tracking-[0.1em] text-green-400 font-bold ml-4 md:ml-0">
+          <button onClick={() => setLocation("/rules")} className="text-left hover:text-white transition-colors">▶ 0. NERD_PROTOCOL (규칙)</button>
+          <button onClick={() => setLocation("/feed")} className="text-left hover:text-white transition-colors">▶ 1. 활동 모집 피드</button>
+          <button onClick={() => setLocation("/chat-list")} className="text-left hover:text-white transition-colors pl-8">2. 비밀 대화함 (수락전)</button>
+          <button onClick={() => setLocation("/profile")} className="text-left hover:text-white transition-colors pl-8">3. 나의 데이터 (프로필)</button>
         </div>
-      </div>
-
+      )}
+      
     </div>
   );
 }
