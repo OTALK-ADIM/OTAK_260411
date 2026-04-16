@@ -113,7 +113,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* 💡 배너 색상 오류 완벽 수정: 기본 네온 초록색으로 고정 */}
           <Link href="/">
             <div className="w-full border-2 border-green-500 py-10 md:py-12 flex flex-col items-center justify-center bg-black shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden cursor-pointer">
               <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,0,0.03)_1px,transparent_1px)] bg-[size:100%_4px] pointer-events-none"></div>
@@ -127,8 +126,8 @@ export default function App() {
           </Link>
         </header>
 
-        {/* 💡 컨텐츠가 넉넉하게 들어갈 수 있도록 여백 및 구조 조정 */}
-        <main className="w-full flex-grow flex flex-col items-center justify-start">
+        {/* 💡 핵심 수정: items-center와 justify-start를 제거하여 내부 컴포넌트가 화면을 넓게 쓰도록 허용 */}
+        <main className="w-full flex-grow flex flex-col">
           {authState === "UNAUTH" && (
             <Switch>
               <Route path="/" component={Home} />
