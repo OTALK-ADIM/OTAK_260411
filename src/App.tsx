@@ -25,6 +25,22 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [location, setLocation] = useLocation();
 
+  // 💡 현재 URL 경로에 따라 페이지 타이틀을 반환하는 함수
+  const getPageTitle = (path: string) => {
+    if (path === "/") return "MAIN_MENU";
+    if (path === "/login") return "USER_AUTHENTICATION";
+    if (path === "/signup") return "NEW_USER_REGISTRATION";
+    if (path === "/onboarding") return "ONBOARDING_PROCESS";
+    if (path === "/feed") return "DATA_FEED";
+    if (path === "/profile") return "MY_ARCHIVE";
+    if (path === "/write") return "DATA_ENTRY";
+    if (path === "/chat-list") return "SECURE_COMMS";
+    if (path === "/rules") return "NERD_PROTOCOL";
+    if (path.startsWith("/post/")) return "DATA_DETAIL";
+    if (path.startsWith("/chat/")) return "COMMS_LINK";
+    return "SYSTEM_TERMINAL";
+  };
+
   useEffect(() => {
     const verifyUser = async (sessionUser: any) => {
       if (!sessionUser) {
@@ -77,7 +93,7 @@ export default function App() {
     <div className="min-h-screen w-full flex justify-center bg-black px-4 pt-4 pb-12 font-mono text-green-500 selection:bg-green-500 selection:text-black">
       <div className="w-full max-w-[800px] flex flex-col min-h-screen">
         
-        <header className="w-full flex flex-col mb-6 md:mb-10">
+        <header className="w-full flex flex-col mb-4 md:mb-8">
           <div className="w-full border border-green-500 py-2 flex justify-center items-center bg-black mb-3">
             <span className="text-green-500 text-sm md:text-base tracking-[0.5em] font-bold">
               [ 오 타 쿠 가 세 상 을 지 배 한 다 . ]
@@ -124,9 +140,16 @@ export default function App() {
               </p>
             </div>
           </Link>
+          
+          {/* 💡 요청하신 기능: 현재 어떤 페이지인지 출력해주는 공통 타이틀 영역 */}
+          <div className="w-full flex justify-center items-center mt-6">
+            <h2 className="text-2xl md:text-3xl text-green-500 font-bold tracking-[0.1em] drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]">
+              {getPageTitle(location)}
+            </h2>
+          </div>
         </header>
 
-        {/* 💡 핵심 수정: items-center와 justify-start를 제거하여 내부 컴포넌트가 화면을 넓게 쓰도록 허용 */}
+        {/* 💡 컨텐츠가 자연스럽게 위에서부터 아래로 흐르도록 배치 */}
         <main className="w-full flex-grow flex flex-col">
           {authState === "UNAUTH" && (
             <Switch>
