@@ -2,8 +2,12 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { supabase } from "../lib/supabase";
 
+// 💡 시스템에서 사용할 카테고리 목록 정의
+const CATEGORIES = ["일반", "모집", "자랑", "정보"];
+
 export default function WritePost() {
   const [, setLocation] = useLocation();
+  const [category, setCategory] = useState(CATEGORIES[0]); // 💡 기본값은 첫 번째 카테고리
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,8 +25,9 @@ export default function WritePost() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("인증된 유저를 찾을 수 없습니다.");
 
-      // 💡 진짜 최종 해결! 서랍 이름을 사진에서 찾으신 'author'로 변경!!
+      // 💡 에러 원인 완벽 해결! 선택한 category 데이터도 같이 보냅니다.
       const { error } = await supabase.from("posts").insert({
+        category, // 추가됨!
         title,
         content,
         author: user.id 
@@ -51,6 +56,28 @@ export default function WritePost() {
 
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-8 md:gap-12 max-w-3xl mx-auto">
         
+        {/* 💡 카테고리 선택 영역 추가 */}
+        <div className="flex flex-col gap-3">
+          <label className="text-base md:text-xl font-bold text-green-600 tracking-widest flex items-center">
+            <span className="text-green-400 mr-2">&gt;</span> [ CATEGORY / 분류 ]
+          </label>
+          <div className="flex flex-wrap gap-4">
+            {CATEGORIES.map((cat) => (
+              <div 
+                key={cat}
+                onClick={() => setCategory(cat)}
+                className={`border-2 px-6 py-3 text-lg md:text-xl cursor-pointer font-bold tracking-widest transition-none ${
+                  category === cat 
+                    ? "border-green-500 bg-green-500 text-black shadow-[0_0_10px_rgba(34,197,94,0.5)]" 
+                    : "border-green-900 text-green-600 hover:border-green-500 hover:text-green-400"
+                }`}
+              >
+                [ {cat} ]
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className="flex flex-col gap-3">
           <label className="text-base md:text-xl font-bold text-green-600 tracking-widest flex items-center">
             <span className="text-green-400 mr-2">&gt;</span> [ SUBJECT / 제목 ]
