@@ -1,81 +1,75 @@
 import { useEffect, useState } from "react";
-import { useLocation, useParams } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import { supabase } from "../lib/supabase";
 
 export default function PostDetail() {
-  const { id } = useParams();
+  const [, params] = useRoute("/post/:id");
   const [, setLocation] = useLocation();
-  const [isApproved, setIsApproved] = useState<boolean>(false);
   const [post, setPost] = useState<any>(null);
-  const [comment, setComment] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      // 1. 현재 유저의 승인 상태 확인
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase.from("profiles").select("is_approved").eq("id", user.id).maybeSingle();
-        if (profile) setIsApproved(profile.is_approved);
-      }
+    const fetchPost = async () => {
+      if (!params?.id) return;
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", params.id)
+        .maybeSingle();
 
-      // 2. 게시글 데이터 불러오기
-      if (id) {
-        const { data: fetchedPost } = await supabase.from("posts").select("*").eq("id", id).maybeSingle();
-        if (fetchedPost) setPost(fetchedPost);
+      if (error || !data) {
+        alert("[에러] 데이터를 불러올 수 없습니다.");
+        setLocation("/feed");
+        return;
       }
+      setPost(data);
+      setLoading(false);
     };
-    fetchData();
-  }, [id]);
+    fetchPost();
+  }, [params?.id]);
 
-  const handleCommentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!comment.trim()) return;
-    alert("댓글 저장 로직 구현 필요!"); // 실제 댓글 DB 저장 로직 추가 위치
-    setComment("");
-  };
-
-  if (!post) {
-    return <div className="text-center py-20 animate-pulse text-green-700">LOADING_DATA...</div>;
-  }
+  if (loading) return <div className="text-green-500 animate-pulse p-10 font-mono">[ DATA_LOADING... ]</div>;
 
   return (
-    <div className="w-full flex flex-col gap-6">
-      <button onClick={() => setLocation("/feed")} className="text-xs text-green-600 hover:text-green-400 self-start">
-        {"< [ 뒤 로 가 기 ]"}
-      </button>
+    <div className="w-full flex flex-col font-mono mt-4 md:mt-8 px-4 md:px-0 pb-20">
+      
+      {/* 상단 헤더 영역 */}
+      <div className="w-full border-b-2 border-green-900 pb-6 mb-8">
+        <div className="text-green-700 text-xs md:text-sm mb-4 tracking-tighter">
+          &gt; FILE_ID: {post.id}<br/>
+          {/* 💡 날짜와 시간을 모두 정밀하게 표기 */}
+          &gt; TIMESTAMP: {new Date(post.created_at).toLocaleString('ko-KR', { 
+            year: 'numeric', month: '2-digit', day: '2-digit', 
+            hour: '2-digit', minute: '2-digit', second: '2-digit' 
+          })}
+        </div>
+        
+        <div className="flex items-center gap-3 mb-4">
+          <span className="bg-green-900/30 text-green-400 px-3 py-1 text-sm font-bold border border-green-800">
+            [{post.category || '일반'}]
+          </span>
+        </div>
 
-      {/* 게시글 본문 */}
-      <div className="border border-green-500 p-6 bg-black shadow-[0_0_15px_rgba(34,197,94,0.1)]">
-        <h1 className="text-2xl font-bold text-green-400 mb-4 pb-4 border-b border-green-900">
+        {/* 💡 제목 크기 대폭 확대 */}
+        <h1 className="text-3xl md:text-5xl font-bold text-green-500 leading-tight">
           {post.title}
         </h1>
-        <div className="text-green-500 whitespace-pre-wrap leading-relaxed text-sm">
-          {post.content}
-        </div>
       </div>
 
-      {/* 💡 댓글 입력 영역 (승인 상태에 따른 차단) */}
-      <div className="border border-green-900 p-6 mt-4">
-        <h3 className="text-green-500 font-bold mb-4">:: SYSTEM_COMMENTS ::</h3>
-        
-        {isApproved ? (
-          <form onSubmit={handleCommentSubmit} className="flex flex-col gap-3">
-            <textarea 
-              value={comment} 
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="여기에 코멘트를 입력하십시오..."
-              className="w-full bg-black border border-green-700 text-green-400 p-3 h-20 resize-none outline-none focus:border-green-400"
-            />
-            <button type="submit" className="self-end border border-green-500 px-6 py-2 text-sm hover:bg-green-500 hover:text-black transition-colors font-bold">
-              [ 코 멘 트 전 송 ]
-            </button>
-          </form>
-        ) : (
-          <div className="w-full p-4 border border-dashed border-red-900 bg-red-950/10 text-center text-red-500 text-xs leading-loose">
-            현재 임시 거주 상태이므로 코멘트를 남길 수 없습니다.<br/>
-            (관리자의 승인을 기다려 주십시오.)
-          </div>
-        )}
+      {/* 💡 본문 내용 크기 대폭 확대 및 가독성 조정 */}
+      <div className="w-full bg-black border-l-4 border-green-900 pl-6 py-4 mb-12">
+        <p className="text-xl md:text-3xl text-green-400 leading-relaxed whitespace-pre-wrap">
+          {post.content}
+        </p>
+      </div>
+
+      <div className="flex justify-start">
+        <div 
+          onClick={() => setLocation("/feed")}
+          className="border-2 border-green-900 text-green-700 px-8 py-4 text-xl hover:text-green-400 hover:border-green-500 cursor-pointer transition-none font-bold tracking-widest"
+        >
+          [ &lt; RETURN_TO_FEED ]
+        </div>
       </div>
     </div>
   );
