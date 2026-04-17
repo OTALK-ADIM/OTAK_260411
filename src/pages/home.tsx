@@ -17,6 +17,34 @@ export default function Home() {
   return (
     <div className="w-full flex flex-col">
       
+      {/* 💡 Tailwind 엔진 무시! 강제 크기/간격 주입 (절대 실패 불가) */}
+      <style>{`
+        .nuke-menu-container {
+          display: flex; flex-direction: column;
+          gap: 3rem; margin-top: 3rem;
+          width: 100%; max-width: 40rem; margin: 3rem auto 0 auto;
+          padding: 0 1.5rem;
+        }
+        .nuke-menu-item {
+          font-size: 1.8rem; padding: 1.5rem 0;
+          cursor: pointer; display: flex; align-items: center;
+          text-align: left; color: #22c55e; font-weight: bold;
+        }
+        .nuke-menu-item:hover { color: #86efac; }
+        .nuke-menu-icon { margin-right: 1.5rem; color: #4ade80; }
+        .nuke-menu-item:hover .nuke-menu-icon { color: #86efac; }
+        .nuke-prompt {
+          font-size: 1.5rem; color: #22c55e; border-bottom: 2px dashed #166534;
+          padding-bottom: 1rem; margin-bottom: 0.5rem; letter-spacing: 0.1em;
+        }
+        @media (min-width: 768px) {
+          .nuke-menu-container { gap: 4.5rem; margin-top: 5rem; padding: 0; }
+          .nuke-menu-item { font-size: 3rem; padding: 2.5rem 0; }
+          .nuke-prompt { font-size: 2.25rem; border-bottom: 4px dashed #166534; padding-bottom: 1.5rem; }
+          .nuke-menu-icon { margin-right: 2.5rem; }
+        }
+      `}</style>
+
       {!user ? (
         <div className="flex flex-col items-center gap-10 mt-16">
           <p className="text-sm md:text-base text-green-500 tracking-widest font-bold animate-pulse text-center leading-loose">
@@ -31,24 +59,26 @@ export default function Home() {
           </div>
         </div>
       ) : (
-        /* 💡 gap-12로 리스트 간격을 엄청나게 벌리고 화면 정중앙으로 밀어넣습니다 */
-        <div className="w-full max-w-xl mx-auto flex flex-col gap-12 md:gap-16 text-green-500 font-bold mt-12 md:mt-20 px-4 md:px-0">
+        <div className="nuke-menu-container">
           
-          {/* 💡 text-3xl로 글자를 매우 크게 키우고 py-6으로 클릭 영역도 높였습니다. */}
-          <div onClick={() => setLocation("/rules")} className="text-left text-3xl md:text-5xl hover:text-green-300 cursor-pointer flex items-center transition-none group py-6">
-            <span className="mr-6 text-green-400 group-hover:text-green-300">▶</span> 0. NERD_PROTOCOL (규칙)
+          <h2 className="nuke-prompt bg-black">
+            root@otalk:~# ls -l
+          </h2>
+
+          <div onClick={() => setLocation("/rules")} className="nuke-menu-item transition-none group">
+            <span className="nuke-menu-icon">▶</span> 0. NERD_PROTOCOL (규칙)
           </div>
 
-          <div onClick={() => setLocation("/feed")} className="text-left text-3xl md:text-5xl hover:text-green-300 cursor-pointer flex items-center transition-none group py-6">
-            <span className="mr-6 text-green-400 group-hover:text-green-300">▶</span> 1. 활동 모집 피드
+          <div onClick={() => setLocation("/feed")} className="nuke-menu-item transition-none group">
+            <span className="nuke-menu-icon">▶</span> 1. 활동 모집 피드
           </div>
 
-          <div onClick={() => setLocation("/chat-list")} className="text-left text-3xl md:text-5xl hover:text-green-300 cursor-pointer flex items-center transition-none group py-6">
-            <span className="mr-6 text-green-400 group-hover:text-green-300">▶</span> 2. 비밀 대화함 (수락전)
+          <div onClick={() => setLocation("/chat-list")} className="nuke-menu-item transition-none group">
+            <span className="nuke-menu-icon">▶</span> 2. 비밀 대화함 (수락전)
           </div>
 
-          <div onClick={() => setLocation("/profile")} className="text-left text-3xl md:text-5xl hover:text-green-300 cursor-pointer flex items-center transition-none group py-6">
-            <span className="mr-6 text-green-400 group-hover:text-green-300">▶</span> 3. 나의 데이터 (프로필)
+          <div onClick={() => setLocation("/profile")} className="nuke-menu-item transition-none group">
+            <span className="nuke-menu-icon">▶</span> 3. 나의 데이터 (프로필)
           </div>
           
         </div>
