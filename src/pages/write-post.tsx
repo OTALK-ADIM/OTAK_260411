@@ -21,11 +21,11 @@ export default function WritePost() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("인증된 유저를 찾을 수 없습니다.");
 
-      // 💡 에러 원인 완벽 해결! author_id 대신 user_id 로 변경했습니다.
+      // 💡 진짜 최종 해결! 서랍 이름을 사진에서 찾으신 'author'로 변경!!
       const { error } = await supabase.from("posts").insert({
         title,
         content,
-        user_id: user.id 
+        author: user.id 
       });
 
       if (error) throw error;
