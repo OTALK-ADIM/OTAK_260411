@@ -17,8 +17,28 @@ export default function Home() {
   return (
     <div className="w-full flex flex-col">
       
-      {/* 💡 강제 주입 CSS의 수치를 딱 40% 정도 예쁘게 줄였습니다! */}
       <style>{`
+        /* 💡 1. 로그인 전 화면 (START 부분) 시원하게 내리기 */
+        .nuke-start-container {
+          display: flex; flex-direction: column; align-items: center;
+          margin-top: 6rem; /* 배너에서 밑으로 훌쩍 띄움 */
+          gap: 4rem; /* 경고 문구와 START 버튼 사이 간격 넉넉하게 */
+          padding: 0 1rem;
+        }
+        .nuke-warning-text {
+          color: #22c55e; letter-spacing: 0.15em;
+          font-weight: bold; text-align: center; line-height: 2.5;
+          font-size: 1rem;
+        }
+        .nuke-start-btn {
+          border: 2px solid #22c55e; background-color: black;
+          color: #4ade80; padding: 1.5rem 5rem; font-size: 1.5rem;
+          letter-spacing: 0.4em; font-weight: bold; cursor: pointer;
+          box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+        }
+        .nuke-start-btn:hover { background-color: #22c55e; color: black; }
+
+        /* 💡 2. 메인 메뉴 화면 (합격하신 40% 다이어트 사이즈 유지) */
         .nuke-menu-container {
           display: flex; flex-direction: column;
           gap: 1.8rem; margin-top: 3rem;
@@ -37,7 +57,13 @@ export default function Home() {
           font-size: 1.2rem; color: #22c55e; border-bottom: 2px dashed #166534;
           padding-bottom: 0.8rem; margin-bottom: 0.5rem; letter-spacing: 0.1em;
         }
+
+        /* PC 화면 등 큰 화면일 때의 배율 */
         @media (min-width: 768px) {
+          .nuke-start-container { margin-top: 8rem; gap: 5rem; }
+          .nuke-warning-text { font-size: 1.2rem; }
+          .nuke-start-btn { padding: 2rem 6rem; font-size: 2rem; }
+
           .nuke-menu-container { gap: 2.5rem; margin-top: 4rem; padding: 0; }
           .nuke-menu-item { font-size: 1.8rem; padding: 1.5rem 0; }
           .nuke-prompt { font-size: 1.5rem; border-bottom: 4px dashed #166534; padding-bottom: 1rem; }
@@ -46,14 +72,14 @@ export default function Home() {
       `}</style>
 
       {!user ? (
-        <div className="flex flex-col items-center gap-10 mt-16">
-          <p className="text-sm md:text-base text-green-500 tracking-widest font-bold animate-pulse text-center leading-loose">
+        <div className="nuke-start-container">
+          <p className="nuke-warning-text animate-pulse">
             :: WARNING: UNAUTHORIZED ACCESS IS PROHIBITED ::<br/>
             접속을 위해 시스템 스타트 명령을 실행하십시오.
           </p>
           <div 
             onClick={() => setLocation("/login")}
-            className="border-2 border-green-500 bg-black text-green-400 px-16 py-6 text-2xl tracking-[0.3em] hover:bg-green-500 hover:text-black transition-none shadow-[0_0_15px_rgba(34,197,94,0.4)] font-bold cursor-pointer inline-block text-center"
+            className="nuke-start-btn"
           >
             [ S T A R T ]
           </div>
