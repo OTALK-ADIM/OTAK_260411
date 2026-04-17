@@ -6,6 +6,7 @@ export default function PostDetail() {
   const [, params] = useRoute("/post/:id");
   const [, setLocation] = useLocation();
   const [post, setPost] = useState<any>(null);
+  const [authorProfile, setAuthorProfile] = useState<any>(null);
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
@@ -15,12 +16,7 @@ export default function PostDetail() {
     if (!params?.id) return;
     
     // 1. 게시글 가져오기
-    const { data: postData } = await supabase
-      .from("posts")
-      .select("*")
-      .eq("id", params.id)
-      .maybeSingle();
-
+    const { data: postData } = await supabase.from("posts").select("*").eq("id", params.id).maybeSingle();
     if (!postData) {
       alert("[에러] 데이터를 찾을 수 없습니다.");
       setLocation("/feed");
@@ -28,14 +24,27 @@ export default function PostDetail() {
     }
     setPost(postData);
 
-    // 2. 댓글 가져오기 (댓글 테이블이 'comments'라고 가정)
-    const { data: commentData } = await supabase
-      .from("comments")
-      .select("*")
-      .eq("post_id", params.id)
-      .order("created_at", { ascending: true });
+    // 2. 글 작성자 프로필 가져오기
+    const { data: profileData } = await supabase.from("profiles").select("*").eq("id", postData.author).maybeSingle();
+    if (profileData) setAuthorProfile(profileData);
 
-    if (commentData) setComments(commentData);
+    // 3. 댓글 가져오기
+    const { data: commentData } = await supabase.from("comments").select("*").eq("post_id", params.id).order("created_at", { ascending: true });
+    
+    // 4. 댓글 작성자들의 프로필(닉네임) 한 번에 가져오기
+    if (commentData && commentData.length > 0) {
+      const userIds = [...new Set(commentData.map(c => c.user_id))];
+      const { data: profilesData } = await supabase.from("profiles").select("id, nickname").in("id", userIds);
+      const profilesMap = profilesData?.reduce((acc, p) => ({ ...acc, [p.id]: p.nickname }), {}) || {};
+      
+      const commentsWithNicknames = commentData.map(c => ({
+        ...c,
+        nickname: profilesMap[c.user_id] || "알 수 없는 유저"
+      }));
+      setComments(commentsWithNicknames);
+    } else {
+      setComments([]);
+    }
     setLoading(false);
   };
 
@@ -56,12 +65,11 @@ export default function PostDetail() {
         post_id: post.id,
         user_id: user.id,
         content: newComment,
-        // 💡 닉네임 등을 프로필에서 가져와 넣을 수도 있습니다.
       });
 
       if (error) throw error;
       setNewComment("");
-      fetchPostAndComments(); // 댓글 목록 새로고침
+      fetchPostAndComments(); 
     } catch (error: any) {
       alert(`[시스템 에러] 댓글 등록 실패: ${error.message}`);
     } finally {
@@ -74,47 +82,60 @@ export default function PostDetail() {
   return (
     <div className="w-full flex flex-col font-mono mt-4 md:mt-8 px-4 md:px-0 pb-32">
       
-      {/* 💡 헤더: 시간 버그 방어 로직 적용 */}
       <div className="w-full border-b-2 border-green-900 pb-6 mb-10">
-        <div className="text-green-700 text-xs md:text-sm mb-4">
-          &gt; ACCESS_TIME: {post.created_at ? new Date(post.created_at).toLocaleString('ko-KR') : "TIME_UNKNOWN"}<br/>
-          &gt; CATEGORY: [{post.category || "GENERAL"}]
+        <div className="flex justify-between items-start mb-4">
+          <div className="text-green-700 text-xs md:text-sm">
+            &gt; ACCESS_TIME: {post.created_at ? new Date(post.created_at).toLocaleString('ko-KR') : "TIME_UNKNOWN"}<br/>
+            &gt; CATEGORY: [{post.category || "GENERAL"}]
+          </div>
+          {/* 💡 글 작성자 프로필 링크 */}
+          <div 
+            onClick={() => setLocation(authorProfile ? `/profile/${authorProfile.id}` : "#")}
+            className="border border-green-800 bg-green-950/30 px-3 py-1 text-green-400 cursor-pointer hover:bg-green-500 hover:text-black transition-none font-bold text-sm"
+          >
+            AUTHOR: {authorProfile?.nickname || "UNKNOWN"}
+          </div>
         </div>
         <h1 className="text-3xl md:text-5xl font-bold text-green-500 leading-tight">
           {post.title}
         </h1>
       </div>
 
-      {/* 💡 본문: 시원하게 크기 확대 */}
       <div className="w-full mb-16">
         <div className="text-2xl md:text-4xl text-green-400 leading-relaxed whitespace-pre-wrap min-h-[30vh]">
           {post.content}
         </div>
       </div>
 
-      {/* 💡 댓글 섹션 추가 */}
       <div className="w-full border-t-2 border-dashed border-green-900 pt-10 mb-10">
         <h3 className="text-xl md:text-2xl font-bold text-green-600 mb-6 tracking-widest">
-          [ COMMENTS_SECTION ]
+          [ COMMENTS_SECTION ] ({comments.length})
         </h3>
 
-        {/* 댓글 목록 */}
         <div className="flex flex-col gap-6 mb-10">
           {comments.length === 0 ? (
             <p className="text-green-900 italic text-sm">-- NO_COMMENTS_YET --</p>
           ) : (
             comments.map((c) => (
-              <div key={c.id} className="border-l-2 border-green-800 pl-4 py-2 bg-green-950/5">
-                <p className="text-lg md:text-xl text-green-400">{c.content}</p>
-                <span className="text-[10px] text-green-900 mt-2 block">
-                  {new Date(c.created_at).toLocaleString()}
-                </span>
+              <div key={c.id} className="border-l-4 border-green-800 pl-4 py-2 bg-green-950/10 relative group">
+                <p className="text-lg md:text-xl text-green-400 mb-2">{c.content}</p>
+                <div className="flex justify-between items-end">
+                  <span className="text-xs text-green-800">
+                    {new Date(c.created_at).toLocaleString()}
+                  </span>
+                  {/* 💡 댓글 작성자 프로필 링크 */}
+                  <span 
+                    onClick={() => setLocation(`/profile/${c.user_id}`)}
+                    className="text-sm font-bold text-green-600 cursor-pointer hover:text-green-300 underline decoration-dashed underline-offset-4"
+                  >
+                    @{c.nickname}
+                  </span>
+                </div>
               </div>
             ))
           )}
         </div>
 
-        {/* 댓글 입력창 */}
         <form onSubmit={handleCommentSubmit} className="flex flex-col gap-4">
           <textarea 
             value={newComment}
@@ -134,7 +155,6 @@ export default function PostDetail() {
         </form>
       </div>
 
-      {/* 💡 뒤로가기 버튼: 가장 하단 배치 */}
       <div className="flex justify-center mt-10">
         <div 
           onClick={() => setLocation("/feed")}
