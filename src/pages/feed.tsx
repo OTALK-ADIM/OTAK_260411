@@ -38,6 +38,16 @@ export default function Feed() {
         )}
       </div>
 
+      {!isApproved && (
+        <div className="w-full border-2 border-dashed border-red-900 p-4 text-center bg-black mt-2">
+          <p className="text-red-500 font-bold mb-1 tracking-widest text-sm">:: TEMPORARY ACCESS GRANTED ::</p>
+          <p className="text-red-800 text-xs leading-relaxed">
+            현재 임시 거주증으로 열람 중입니다.<br/>
+            게시글 작성은 관리자 승인 이후 활성화됩니다.
+          </p>
+        </div>
+      )}
+
       <div className="border border-green-800 bg-black mt-2">
         <div className="flex border-b-2 border-green-800 text-green-600 text-xs md:text-sm p-3 font-bold bg-green-950/20 tracking-widest uppercase">
           <div className="w-12 md:w-16 text-center">ID</div>
@@ -51,17 +61,21 @@ export default function Feed() {
           </div>
         ) : (
           posts.map((post, index) => {
-            // 💡 날짜 표기를 YYYY-MM-DD HH:MM 형식으로 정밀하게 조정
-            const dateObj = new Date(post.created_at);
-            const dateStr = post.created_at 
-              ? `${dateObj.getMonth()+1}/${dateObj.getDate()} ${dateObj.getHours()}:${dateObj.getMinutes().toString().padStart(2, '0')}`
-              : 'N/A';
+            // 💡 1970년 방지용 날짜 처리 로직
+            let dateDisplay = "N/A";
+            if (post.created_at) {
+              const d = new Date(post.created_at);
+              // 데이터베이스에서 빈 값이 넘어와서 1970년으로 인식되는 경우를 필터링합니다.
+              if (d.getFullYear() > 1970) {
+                dateDisplay = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
+              }
+            }
             
             return (
               <div 
                 key={post.id} 
                 onClick={() => setLocation(`/post/${post.id}`)}
-                className="flex border-b border-green-900 text-green-500 text-sm p-3 hover:bg-green-500 hover:text-black transition-none cursor-pointer group"
+                className="flex border-b border-green-900 text-green-500 text-sm p-4 hover:bg-green-500 hover:text-black transition-none cursor-pointer group"
               >
                 <div className="w-12 md:w-16 text-center text-xs opacity-50 group-hover:opacity-100">
                   {posts.length - index}
@@ -72,8 +86,8 @@ export default function Feed() {
                   </span>
                   {post.title}
                 </div>
-                <div className="w-24 md:w-40 text-center text-[10px] md:text-xs opacity-50 group-hover:opacity-100">
-                  {dateStr}
+                <div className="w-24 md:w-40 text-center text-[10px] md:text-xs opacity-50 group-hover:opacity-100 font-mono">
+                  {dateDisplay}
                 </div>
               </div>
             )
