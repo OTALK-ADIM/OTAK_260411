@@ -17,31 +17,31 @@ export default function Home() {
   return (
     <div className="w-full flex flex-col">
       
-      {/* 💡 Tailwind 엔진 무시! 강제 크기/간격 주입 (절대 실패 불가) */}
+      {/* 💡 강제 주입 CSS의 수치를 딱 40% 정도 예쁘게 줄였습니다! */}
       <style>{`
         .nuke-menu-container {
           display: flex; flex-direction: column;
-          gap: 3rem; margin-top: 3rem;
+          gap: 1.8rem; margin-top: 3rem;
           width: 100%; max-width: 40rem; margin: 3rem auto 0 auto;
           padding: 0 1.5rem;
         }
         .nuke-menu-item {
-          font-size: 1.8rem; padding: 1.5rem 0;
+          font-size: 1.2rem; padding: 1rem 0;
           cursor: pointer; display: flex; align-items: center;
           text-align: left; color: #22c55e; font-weight: bold;
         }
         .nuke-menu-item:hover { color: #86efac; }
-        .nuke-menu-icon { margin-right: 1.5rem; color: #4ade80; }
+        .nuke-menu-icon { margin-right: 1rem; color: #4ade80; }
         .nuke-menu-item:hover .nuke-menu-icon { color: #86efac; }
         .nuke-prompt {
-          font-size: 1.5rem; color: #22c55e; border-bottom: 2px dashed #166534;
-          padding-bottom: 1rem; margin-bottom: 0.5rem; letter-spacing: 0.1em;
+          font-size: 1.2rem; color: #22c55e; border-bottom: 2px dashed #166534;
+          padding-bottom: 0.8rem; margin-bottom: 0.5rem; letter-spacing: 0.1em;
         }
         @media (min-width: 768px) {
-          .nuke-menu-container { gap: 4.5rem; margin-top: 5rem; padding: 0; }
-          .nuke-menu-item { font-size: 3rem; padding: 2.5rem 0; }
-          .nuke-prompt { font-size: 2.25rem; border-bottom: 4px dashed #166534; padding-bottom: 1.5rem; }
-          .nuke-menu-icon { margin-right: 2.5rem; }
+          .nuke-menu-container { gap: 2.5rem; margin-top: 4rem; padding: 0; }
+          .nuke-menu-item { font-size: 1.8rem; padding: 1.5rem 0; }
+          .nuke-prompt { font-size: 1.5rem; border-bottom: 4px dashed #166534; padding-bottom: 1rem; }
+          .nuke-menu-icon { margin-right: 1.5rem; }
         }
       `}</style>
 
@@ -53,7 +53,7 @@ export default function Home() {
           </p>
           <div 
             onClick={() => setLocation("/login")}
-            className="border-2 border-green-500 bg-black text-green-400 px-20 py-8 text-3xl tracking-[0.3em] hover:bg-green-500 hover:text-black transition-none shadow-[0_0_20px_rgba(34,197,94,0.4)] font-bold cursor-pointer inline-block text-center"
+            className="border-2 border-green-500 bg-black text-green-400 px-16 py-6 text-2xl tracking-[0.3em] hover:bg-green-500 hover:text-black transition-none shadow-[0_0_15px_rgba(34,197,94,0.4)] font-bold cursor-pointer inline-block text-center"
           >
             [ S T A R T ]
           </div>
