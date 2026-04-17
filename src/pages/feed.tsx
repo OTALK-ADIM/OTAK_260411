@@ -21,16 +21,11 @@ export default function Feed() {
   }, []);
 
   return (
-    <div className="w-full flex flex-col gap-6 font-mono">
+    <div className="w-full flex flex-col gap-8 font-mono mt-4 md:mt-8">
       
-      {/* 상단 컨트롤 패널 */}
-      <div className="flex flex-col md:flex-row justify-between items-center border border-green-500 p-4 bg-black gap-4 shadow-[0_0_10px_rgba(34,197,94,0.1)]">
-        <h2 className="text-xl md:text-2xl font-bold tracking-widest text-green-400">
-          :: DATA_FEED ::
-        </h2>
-        
+      {/* 상단 컨트롤 패널 - 중복 제목 제거 */}
+      <div className="flex justify-end items-center px-2">
         {isApproved ? (
-          /* 💡 button 태그를 div로 교체! */
           <div 
             onClick={() => setLocation("/write")}
             className="border-2 border-green-500 bg-black text-green-400 px-6 py-2 hover:bg-green-500 hover:text-black transition-none font-bold tracking-widest cursor-pointer inline-block text-center"
@@ -44,7 +39,6 @@ export default function Feed() {
         )}
       </div>
 
-      {/* 심사 중 안내 배너 */}
       {!isApproved && (
         <div className="w-full border-2 border-dashed border-red-900 p-4 text-center bg-black">
           <p className="text-red-500 font-bold mb-1 tracking-widest text-sm">:: TEMPORARY ACCESS GRANTED ::</p>
@@ -55,25 +49,24 @@ export default function Feed() {
         </div>
       )}
 
-      {/* 게시글 목록 (터미널 게시판 형태) */}
-      <div className="border border-green-800 bg-black">
-        {/* 헤더 */}
-        <div className="flex border-b-2 border-green-800 text-green-600 text-xs md:text-sm p-3 font-bold bg-green-950/20 tracking-widest">
+      {/* 게시글 목록 */}
+      <div className="border border-green-800 bg-black shadow-[0_0_20px_rgba(34,197,94,0.05)]">
+        <div className="flex border-b-2 border-green-800 text-green-600 text-xs md:text-sm p-4 font-bold bg-green-950/20 tracking-widest">
           <div className="w-12 md:w-16 text-center">ID</div>
           <div className="flex-grow text-center">SUBJECT</div>
           <div className="w-24 md:w-32 text-center">DATE</div>
         </div>
 
         {posts.length === 0 ? (
-          <div className="text-center py-20 text-green-800 font-bold tracking-widest animate-pulse">
+          <div className="text-center py-24 text-green-800 font-bold tracking-widest animate-pulse">
             NO_DATA_FOUND
           </div>
         ) : (
           posts.map((post, index) => (
             <Link key={post.id} href={`/post/${post.id}`}>
-              <div className="flex border-b border-green-900 text-green-500 text-sm p-3 hover:bg-green-500 hover:text-black transition-none cursor-pointer group">
+              <div className="flex border-b border-green-900 text-green-500 text-sm p-4 hover:bg-green-500 hover:text-black transition-none cursor-pointer group">
                 <div className="w-12 md:w-16 text-center text-xs md:text-sm opacity-50 group-hover:opacity-100">{posts.length - index}</div>
-                <div className="flex-grow text-left truncate pl-2 md:pl-4 font-bold before:content-['>_'] before:mr-2 before:opacity-0 group-hover:before:opacity-100">{post.title}</div>
+                <div className="flex-grow text-left truncate pl-2 md:pl-4 font-bold before:content-['>_'] before:mr-2 before:opacity-0 group-hover:before:opacity-100 transition-all">{post.title}</div>
                 <div className="w-24 md:w-32 text-center text-[10px] md:text-xs opacity-50 group-hover:opacity-100">{new Date(post.created_at).toLocaleDateString()}</div>
               </div>
             </Link>
