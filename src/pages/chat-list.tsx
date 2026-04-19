@@ -63,56 +63,66 @@ export default function ChatList() {
         <h2 className="text-3xl md:text-4xl font-bold tracking-widest">[ SECURE_COMMS_STATION ]</h2>
       </div>
 
-      <div className="flex flex-col gap-16">
+      <div className="flex flex-col gap-12">
         
-        {/* 받은 통신 요청 (크기 확대) */}
-        <div>
-          <h3 className="text-xl md:text-2xl font-bold mb-4 tracking-widest text-yellow-500 flex items-center">
+        {/* 받은 통신 요청 (최소 높이 부여하여 시원하게 확대) */}
+        <div className="flex flex-col">
+          <h3 className="text-xl md:text-2xl font-bold mb-2 tracking-widest text-yellow-500 flex items-center">
             <span className="mr-3">&gt;</span> PENDING_REQUESTS
           </h3>
-          <div className="border-2 border-yellow-900/50 bg-black">
+          {/* 💡 min-h-[30vh] 로 화면의 30%를 무조건 차지하게 고정 */}
+          <div className="border-2 border-yellow-900/50 bg-black min-h-[30vh] flex flex-col">
             {pendingRequests.length === 0 ? (
-              <div className="p-10 text-center text-yellow-900/50 text-base md:text-lg font-bold tracking-widest">NO_PENDING_REQUESTS</div>
+              <div className="flex-grow flex items-center justify-center p-10 text-center text-yellow-900/50 text-base md:text-lg font-bold tracking-widest">
+                NO_PENDING_REQUESTS
+              </div>
             ) : (
-              pendingRequests.map(room => (
-                <div key={room.id} className="flex flex-col md:flex-row justify-between items-start md:items-center border-b-2 border-yellow-900/30 p-6 md:p-8 gap-6">
-                  <div className="text-yellow-500 font-bold text-2xl md:text-3xl">
-                    <span className="text-base md:text-xl text-yellow-700 mr-4">FROM:</span>{room.otherNickname}
+              <div className="flex flex-col">
+                {pendingRequests.map(room => (
+                  <div key={room.id} className="flex flex-col md:flex-row justify-between items-start md:items-center border-b-2 border-yellow-900/30 p-6 md:p-8 gap-6 hover:bg-yellow-950/20 transition-none">
+                    <div className="text-yellow-500 font-bold text-2xl md:text-3xl">
+                      <span className="text-base md:text-xl text-yellow-700 mr-4">FROM:</span>{room.otherNickname}
+                    </div>
+                    <div className="flex gap-4 w-full md:w-auto">
+                      <button onClick={() => handleRequest(room.id, 'ACCEPTED')} className="flex-1 md:flex-none border-2 border-green-500 bg-green-950/20 text-green-400 px-6 py-4 text-lg md:text-xl hover:bg-green-500 hover:text-black font-bold tracking-widest transition-none">ACCEPT</button>
+                      <button onClick={() => handleRequest(room.id, 'REJECTED')} className="flex-1 md:flex-none border-2 border-red-500 bg-red-950/20 text-red-400 px-6 py-4 text-lg md:text-xl hover:bg-red-500 hover:text-white font-bold tracking-widest transition-none">REJECT</button>
+                    </div>
                   </div>
-                  <div className="flex gap-4 w-full md:w-auto">
-                    <button onClick={() => handleRequest(room.id, 'ACCEPTED')} className="flex-1 md:flex-none border-2 border-green-500 bg-green-950/20 text-green-400 px-6 py-4 text-lg md:text-xl hover:bg-green-500 hover:text-black font-bold tracking-widest transition-none">ACCEPT</button>
-                    <button onClick={() => handleRequest(room.id, 'REJECTED')} className="flex-1 md:flex-none border-2 border-red-500 bg-red-950/20 text-red-400 px-6 py-4 text-lg md:text-xl hover:bg-red-500 hover:text-white font-bold tracking-widest transition-none">REJECT</button>
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
         </div>
 
-        {/* 연결된 통신망 (크기 대폭 확대) */}
-        <div>
-          <h3 className="text-xl md:text-2xl font-bold mb-4 tracking-widest text-green-500 flex items-center">
+        {/* 연결된 통신망 (최소 높이 부여하여 시원하게 확대) */}
+        <div className="flex flex-col">
+          <h3 className="text-xl md:text-2xl font-bold mb-2 tracking-widest text-green-500 flex items-center">
             <span className="mr-3">&gt;</span> ACTIVE_CHANNELS
           </h3>
-          <div className="border-2 border-green-900 bg-black">
+          {/* 💡 min-h-[40vh] 로 화면의 40%를 무조건 차지하게 고정 */}
+          <div className="border-2 border-green-900 bg-black min-h-[40vh] flex flex-col">
             {activeChats.length === 0 ? (
-              <div className="p-12 text-center text-green-900 text-lg md:text-xl font-bold tracking-widest">NO_ACTIVE_CHANNELS</div>
+              <div className="flex-grow flex items-center justify-center p-12 text-center text-green-900 text-lg md:text-xl font-bold tracking-widest">
+                NO_ACTIVE_CHANNELS
+              </div>
             ) : (
-              activeChats.map(room => (
-                <div 
-                  key={room.id} 
-                  onClick={() => setLocation(`/chat/${room.id}`)}
-                  className="flex flex-col md:flex-row justify-between items-start md:items-center border-b-2 border-green-900 p-8 md:p-10 hover:bg-green-500 hover:text-black cursor-pointer group transition-none gap-4"
-                >
-                  <div className="text-green-400 group-hover:text-black font-bold text-3xl md:text-5xl flex items-center">
-                    <span className="text-sm md:text-lg text-green-700 group-hover:text-green-900 mr-4 font-normal">[CONNECTED]</span>
-                    {room.otherNickname}
+              <div className="flex flex-col">
+                {activeChats.map(room => (
+                  <div 
+                    key={room.id} 
+                    onClick={() => setLocation(`/chat/${room.id}`)}
+                    className="flex flex-col md:flex-row justify-between items-start md:items-center border-b-2 border-green-900 p-8 md:p-10 hover:bg-green-500 hover:text-black cursor-pointer group transition-none gap-4"
+                  >
+                    <div className="text-green-400 group-hover:text-black font-bold text-3xl md:text-5xl flex items-center">
+                      <span className="text-sm md:text-lg text-green-700 group-hover:text-green-900 mr-4 font-normal">[CONNECTED]</span>
+                      {room.otherNickname}
+                    </div>
+                    <div className="text-lg md:text-2xl font-bold text-green-800 group-hover:text-black tracking-[0.2em]">
+                      [ ENTER_CHANNEL &gt; ]
+                    </div>
                   </div>
-                  <div className="text-lg md:text-2xl font-bold text-green-800 group-hover:text-black tracking-[0.2em]">
-                    [ ENTER_CHANNEL &gt; ]
-                  </div>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
         </div>
