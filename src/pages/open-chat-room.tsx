@@ -6,7 +6,7 @@ export default function OpenChatRoom() {
   const [, params] = useRoute("/open-chat/:roomId");
   const [, setLocation] = useLocation();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const [myNickname, setMyNickname] = useState("UNKNOWN"); // 내 닉네임 저장용
+  const [myNickname, setMyNickname] = useState("UNKNOWN");
   const [roomInfo, setRoomInfo] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -16,7 +16,6 @@ export default function OpenChatRoom() {
 
   const fetchInitialData = async () => {
     if (!params?.roomId) return;
-
     const { data: room } = await supabase.from("open_chats").select("*").eq("id", params.roomId).maybeSingle();
     if (!room) return setLocation("/chat-list");
     setRoomInfo(room);
@@ -28,7 +27,6 @@ export default function OpenChatRoom() {
       const profilesMap = profiles?.reduce((acc, p) => ({ ...acc, [p.id]: p.nickname }), {}) || {};
       setMessages(msgs.map(m => ({ ...m, nickname: profilesMap[m.sender_id] || "UNKNOWN" })));
     }
-
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
@@ -40,35 +38,30 @@ export default function OpenChatRoom() {
       if (!user) return setLocation("/login");
       setCurrentUser(user);
 
-      // 내 닉네임 미리 가져오기 (초고속 렌더링용)
       const { data: myProfile } = await supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle();
       if (myProfile) setMyNickname(myProfile.nickname);
 
       await fetchInitialData();
 
-      channel = supabase.channel(`room:${params?.roomId}`);
+      // 💡 핵심 해결책: 오픈 톡방 감지기도 시간을 붙여서 매번 새롭게 만듭니다!
+      const uniqueRoomChannel = `room:${params?.roomId}-${Date.now()}`;
+      channel = supabase.channel(uniqueRoomChannel);
 
-      // [실시간 감지] 누군가 새 글을 썼을 때
       channel.on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'open_chat_messages', filter: `room_id=eq.${params?.roomId}` },
         async (payload: any) => {
-          // 💡 핵심: 내가 쓴 메시지는 선반영(옵티미스틱 UI)으로 이미 띄웠으니, 메아리처럼 중복으로 또 뜨지 않게 무시합니다!
           if (payload.new.sender_id === user.id) return;
-
           const { data: profile } = await supabase.from("profiles").select("nickname").eq("id", payload.new.sender_id).maybeSingle();
           const newMsg = { ...payload.new, nickname: profile?.nickname || "UNKNOWN" };
-
           setMessages(prev => [...prev, newMsg]);
           setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
         }
       );
 
-      // [접속자 감지]
       channel.on('presence', { event: 'sync' }, () => {
         const presenceState = channel.presenceState();
-        const count = Object.keys(presenceState).length;
-        setOnlineCount(count);
+        setOnlineCount(Object.keys(presenceState).length);
       });
 
       channel.subscribe(async (status: string) => {
@@ -79,10 +72,7 @@ export default function OpenChatRoom() {
     };
 
     init();
-
-    return () => {
-      if (channel) supabase.removeChannel(channel);
-    };
+    return () => { if (channel) supabase.removeChannel(channel); };
   }, [params?.roomId]);
 
   const handleSend = async (e?: React.FormEvent) => {
@@ -90,9 +80,8 @@ export default function OpenChatRoom() {
     if (!newMessage.trim() || !currentUser) return;
 
     const msgContent = newMessage;
-    setNewMessage(""); // 1. 입력창 즉시 비우기
+    setNewMessage(""); 
 
-    // 💡 2. 초고속 선반영 (Optimistic UI): DB에 가기도 전에 내 화면에 먼저 그려버립니다!
     const tempMsg = {
       id: crypto.randomUUID(),
       room_id: params?.roomId,
@@ -105,7 +94,6 @@ export default function OpenChatRoom() {
     setMessages(prev => [...prev, tempMsg]);
     setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
 
-    // 3. 그 다음 백그라운드에서 조용히 DB에 진짜로 꽂아 넣습니다.
     await supabase.from("open_chat_messages").insert({
       room_id: params?.roomId,
       sender_id: currentUser.id,
@@ -117,7 +105,6 @@ export default function OpenChatRoom() {
 
   return (
     <div className="w-full flex flex-col font-mono mt-2 md:mt-4 px-2 md:px-0 text-blue-500 h-[85vh]">
-      
       <div className="w-full border-b-4 border-blue-500 bg-black pb-4 mb-4 flex justify-between items-end shrink-0">
         <div className="flex flex-col">
           <span className="text-xs md:text-sm tracking-widest text-blue-800 mb-1">&gt; PUBLIC_CHANNEL_CONNECTED</span>
