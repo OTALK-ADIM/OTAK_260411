@@ -15,7 +15,6 @@ export default function PostDetail() {
   const fetchPostAndComments = async () => {
     if (!params?.id) return;
     
-    // 1. 게시글 가져오기
     const { data: postData } = await supabase.from("posts").select("*").eq("id", params.id).maybeSingle();
     if (!postData) {
       alert("[에러] 데이터를 찾을 수 없습니다.");
@@ -24,14 +23,11 @@ export default function PostDetail() {
     }
     setPost(postData);
 
-    // 2. 글 작성자 프로필 가져오기
     const { data: profileData } = await supabase.from("profiles").select("*").eq("id", postData.author).maybeSingle();
     if (profileData) setAuthorProfile(profileData);
 
-    // 3. 댓글 가져오기
     const { data: commentData } = await supabase.from("comments").select("*").eq("post_id", params.id).order("created_at", { ascending: true });
     
-    // 4. 댓글 작성자들의 프로필(닉네임) 한 번에 가져오기
     if (commentData && commentData.length > 0) {
       const userIds = [...new Set(commentData.map(c => c.user_id))];
       const { data: profilesData } = await supabase.from("profiles").select("id, nickname").in("id", userIds);
@@ -68,6 +64,17 @@ export default function PostDetail() {
       });
 
       if (error) throw error;
+
+      // 💡 [ 알림 시스템 연동 ] 내가 쓴 글이 아닐 때만 글쓴이에게 알림 쏘기
+      if (post.author !== user.id) {
+        const { data: myProfile } = await supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle();
+        await supabase.from("notifications").insert({
+          target_user_id: post.author,
+          from_nickname: myProfile?.nickname || "UNKNOWN",
+          type: 'COMMENT'
+        });
+      }
+
       setNewComment("");
       fetchPostAndComments(); 
     } catch (error: any) {
@@ -88,7 +95,6 @@ export default function PostDetail() {
             &gt; ACCESS_TIME: {post.created_at ? new Date(post.created_at).toLocaleString('ko-KR') : "TIME_UNKNOWN"}<br/>
             &gt; CATEGORY: [{post.category || "GENERAL"}]
           </div>
-          {/* 💡 글 작성자 프로필 링크 */}
           <div 
             onClick={() => setLocation(authorProfile ? `/profile/${authorProfile.id}` : "#")}
             className="border border-green-800 bg-green-950/30 px-3 py-1 text-green-400 cursor-pointer hover:bg-green-500 hover:text-black transition-none font-bold text-sm"
@@ -123,7 +129,6 @@ export default function PostDetail() {
                   <span className="text-xs text-green-800">
                     {new Date(c.created_at).toLocaleString()}
                   </span>
-                  {/* 💡 댓글 작성자 프로필 링크 */}
                   <span 
                     onClick={() => setLocation(`/profile/${c.user_id}`)}
                     className="text-sm font-bold text-green-600 cursor-pointer hover:text-green-300 underline decoration-dashed underline-offset-4"

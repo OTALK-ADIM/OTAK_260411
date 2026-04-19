@@ -10,7 +10,6 @@ export default function PublicProfile() {
   const [userComments, setUserComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // 💡 채팅방 상태
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [roomStatus, setRoomStatus] = useState<string | null>(null);
   const [roomId, setRoomId] = useState<string | null>(null);
@@ -22,7 +21,6 @@ export default function PublicProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUser(user);
 
-      // 1. 유저 프로필
       const { data: profileData } = await supabase.from("profiles").select("*").eq("id", params.userId).maybeSingle();
       if (!profileData) {
         alert("[시스템] 존재하지 않는 유저 데이터입니다.");
@@ -35,14 +33,12 @@ export default function PublicProfile() {
       }
       setProfile(profileData);
 
-      // 2. 글/댓글 가져오기
       const { data: postsData } = await supabase.from("posts").select("*").eq("author", params.userId).order("created_at", { ascending: false });
       if (postsData) setUserPosts(postsData);
 
       const { data: commentsData } = await supabase.from("comments").select("*").eq("user_id", params.userId).order("created_at", { ascending: false });
       if (commentsData) setUserComments(commentsData);
 
-      // 💡 3. 나와 타겟 간의 채팅방이 존재하는지 확인
       if (user && user.id !== params.userId) {
         const { data: roomData } = await supabase
           .from("chat_rooms")
@@ -60,7 +56,6 @@ export default function PublicProfile() {
     fetchUserData();
   }, [params?.userId]);
 
-  // 💡 DM 신청 함수
   const handleRequestDM = async () => {
     if (!currentUser) return;
     if (confirm("이 유저에게 비밀 통신망 연결을 요청하시겠습니까?")) {
@@ -72,6 +67,14 @@ export default function PublicProfile() {
       if (error) {
         alert(`[에러] 요청 실패: ${error.message}`);
       } else {
+        // 💡 [ 알림 시스템 연동 ] 상대방에게 DM 요청 알림 쏘기
+        const { data: myProfile } = await supabase.from("profiles").select("nickname").eq("id", currentUser.id).maybeSingle();
+        await supabase.from("notifications").insert({
+          target_user_id: params?.userId,
+          from_nickname: myProfile?.nickname || "UNKNOWN",
+          type: 'DM_REQUEST'
+        });
+
         alert("[시스템] 통신 연결 요청을 전송했습니다.");
         setRoomStatus("PENDING");
         setRoomId(data.id);
@@ -109,12 +112,11 @@ export default function PublicProfile() {
             </div>
           </div>
 
-          {/* 💡 DM 컨트롤 패널 */}
           {currentUser && currentUser.id !== params?.userId && (
             <div className="p-2 border-t border-green-900 bg-green-950/20">
               {!roomStatus ? (
                 <button onClick={handleRequestDM} className="w-full bg-black border border-green-500 text-green-400 py-2 text-xs font-bold tracking-widest hover:bg-green-500 hover:text-black transition-none">
-                  [ REQUEST_SECURE_COMMS (DM 신청) ]
+                  [ REQUEST_SECURE_COMMS ]
                 </button>
               ) : roomStatus === "PENDING" ? (
                 <div className="w-full text-center border border-green-900 text-green-800 py-2 text-xs font-bold tracking-widest animate-pulse">
@@ -122,7 +124,7 @@ export default function PublicProfile() {
                 </div>
               ) : (
                 <button onClick={() => setLocation(`/chat/${roomId}`)} className="w-full bg-green-900 text-green-400 border border-green-400 py-2 text-xs font-bold tracking-widest hover:bg-green-400 hover:text-black transition-none shadow-[0_0_10px_rgba(74,222,128,0.5)]">
-                  [ ENTER_SECURE_CHANNEL (입장) ]
+                  [ ENTER_SECURE_CHANNEL ]
                 </button>
               )}
             </div>
@@ -130,7 +132,6 @@ export default function PublicProfile() {
         </div>
       </div>
 
-      {/* 활동 이력 (기존과 동일하여 축약, 원래 코드 유지) */}
       <div className="flex flex-col gap-10">
         <div>
           <h3 className="text-lg font-bold mb-1 tracking-tighter flex items-center bg-black inline-block pr-2"><span className="text-green-500 mr-2">&gt;</span> UPLOADED_DATA_LOG</h3>
