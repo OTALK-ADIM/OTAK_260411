@@ -174,6 +174,7 @@ export default function App() {
               <Route path="/admin" component={Admin} />
               <Route path="/rules" component={Rules} />
               <Route path="/profile/:userId" component={PublicProfile} />
+              <Route path="/open-chat/:roomId" component={OpenChatRoom} />
               <Route component={NotFound} />
             </Switch>
           )}
