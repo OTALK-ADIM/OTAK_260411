@@ -1,64 +1,122 @@
-import { useState } from "react";
-import { useParams } from "wouter";
+import { useEffect, useState, useRef } from "react";
+import { useRoute, useLocation } from "wouter";
+import { supabase } from "../lib/supabase";
 
 export default function ChatRoom() {
-  const { id } = useParams();
-  const [showProfile, setShowProfile] = useState<string | null>(null);
+  const [, params] = useRoute("/chat/:roomId");
+  const [, setLocation] = useLocation();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [roomInfo, setRoomInfo] = useState<any>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const mockMessages = [
-    { id: 1, user: "Luna", text: "이번 프로젝트 같이 하실래요?" },
-    { id: 2, user: "익명K", text: "조건이 어떻게 되죠?" },
-  ];
+  const fetchMessages = async () => {
+    if (!params?.roomId) return;
+    const { data } = await supabase.from("chat_messages").select("*").eq("room_id", params.roomId).order("created_at", { ascending: true });
+    if (data) setMessages(data);
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+  };
+
+  useEffect(() => {
+    const initChat = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return setLocation("/login");
+      setCurrentUser(user);
+
+      // 1. 방 정보 확인 및 상대방 이름 가져오기
+      const { data: room } = await supabase.from("chat_rooms").select("*").eq("id", params?.roomId).maybeSingle();
+      if (!room || room.status !== 'ACCEPTED') {
+        alert("[보안 경고] 유효하지 않은 통신망입니다.");
+        return setLocation("/chat-list");
+      }
+      
+      const otherUserId = room.user1_id === user.id ? room.user2_id : room.user1_id;
+      const { data: profile } = await supabase.from("profiles").select("nickname").eq("id", otherUserId).maybeSingle();
+      setRoomInfo({ ...room, otherNickname: profile?.nickname || "UNKNOWN" });
+
+      // 2. 메시지 가져오기
+      fetchMessages();
+    };
+    initChat();
+  }, [params?.roomId]);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() || !currentUser) return;
+
+    try {
+      const { error } = await supabase.from("chat_messages").insert({
+        room_id: params?.roomId,
+        sender_id: currentUser.id,
+        content: newMessage
+      });
+      if (error) throw error;
+      setNewMessage("");
+      fetchMessages();
+    } catch (error: any) {
+      alert(`[통신 에러] 전송 실패: ${error.message}`);
+    }
+  };
+
+  if (!roomInfo) return <div className="text-green-500 animate-pulse p-10 font-mono text-center">[ CONNECTING_SECURE_CHANNEL... ]</div>;
 
   return (
-    <div className="w-full flex flex-col h-[70vh] relative">
-      <div className="border-b border-green-500 p-2 flex justify-between font-mono text-xs">
-        <span>CHANNEL: {id}</span>
-        <span className="text-green-400 animate-pulse">● ONLINE</span>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-        {mockMessages.map(m => (
-          <div key={m.id} className="flex flex-col items-start">
-            {/* 💡 닉네임 클릭 시 프로필 보기 */}
-            <button 
-              onClick={() => setShowProfile(m.user)}
-              className="text-[10px] text-green-500 underline mb-1 hover:text-white"
-            >
-              {m.user}
-            </button>
-            <div className="bg-green-900/20 border border-green-500/30 p-2 text-sm max-w-[80%] rounded">
-              {m.text}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* 💡 프로필 모달 (상대 프로필 확인) */}
-      {showProfile && (
-        <div className="absolute inset-0 bg-black/90 flex items-center justify-center p-6 z-50">
-          <div className="border-2 border-green-500 p-6 bg-black w-full max-w-xs flex flex-col gap-4 shadow-[0_0_20px_rgba(0,255,0,0.4)]">
-            <div className="text-center font-bold border-b border-green-500 pb-2">USER_PROFILE</div>
-            <div className="flex flex-col gap-2 text-sm">
-              <p><span className="opacity-50">CODENAME:</span> {showProfile}</p>
-              <p><span className="opacity-50">LEVEL:</span> 14 (Veteran)</p>
-              <p><span className="opacity-50">POSTS:</span> 128</p>
-              <p className="italic opacity-70 mt-2 text-xs">"기록은 사라지지 않는다."</p>
-            </div>
-            <button 
-              onClick={() => setShowProfile(null)}
-              className="mt-4 bg-green-500 text-black font-bold py-1"
-            >
-              [ 닫기 ]
-            </button>
-          </div>
+    <div className="w-full flex flex-col font-mono mt-2 md:mt-4 px-2 md:px-0 text-green-500 h-[80vh]">
+      
+      {/* 헤더 */}
+      <div className="w-full border-2 border-green-500 bg-green-950/20 p-3 mb-4 flex justify-between items-center shrink-0 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
+        <div className="flex flex-col">
+          <span className="text-[10px] tracking-widest text-green-700">TARGET_NODE</span>
+          <span className="text-lg md:text-xl font-bold text-green-400">{roomInfo.otherNickname}</span>
         </div>
-      )}
-
-      <div className="p-2 border-t border-green-500 flex gap-2">
-        <input type="text" className="flex-1 bg-transparent border border-green-500/50 p-2 text-sm focus:outline-none" placeholder="메시지 입력..." />
-        <button className="bg-green-500 text-black px-4 font-bold">[ 전송 ]</button>
+        <div className="flex gap-2">
+          <button onClick={fetchMessages} className="border border-green-500 px-2 py-1 text-[10px] hover:bg-green-500 hover:text-black font-bold transition-none">REFRESH</button>
+          <button onClick={() => setLocation("/chat-list")} className="border border-green-500 px-2 py-1 text-[10px] hover:bg-green-500 hover:text-black font-bold transition-none">EXIT</button>
+        </div>
       </div>
+
+      {/* 메시지 출력 화면 */}
+      <div className="flex-grow border-2 border-green-900 bg-black p-4 overflow-y-auto flex flex-col gap-4 mb-4">
+        <div className="text-center text-[10px] text-green-900 border-b border-green-900 pb-2 mb-2">
+          -- SECURE_CONNECTION_ESTABLISHED --<br/>
+          * WARNING: MESSAGE DELETION IS DISABLED *
+        </div>
+
+        {messages.map((msg) => {
+          const isMe = msg.sender_id === currentUser?.id;
+          return (
+            <div key={msg.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+              <span className="text-[9px] text-green-800 mb-1">{new Date(msg.created_at).toLocaleTimeString()}</span>
+              <div className={`max-w-[80%] border-2 p-3 text-sm md:text-base leading-relaxed break-words ${
+                isMe 
+                  ? "border-green-500 bg-green-950/20 text-green-400" 
+                  : "border-green-800 bg-black text-green-500"
+              }`}>
+                {msg.content}
+              </div>
+            </div>
+          );
+        })}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* 입력창 */}
+      <form onSubmit={handleSendMessage} className="flex gap-2 shrink-0">
+        <input 
+          type="text"
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="SEND_ENCRYPTED_MESSAGE..."
+          className="flex-grow bg-black border-2 border-green-500 text-green-400 p-3 text-sm outline-none placeholder:text-green-900"
+        />
+        <button 
+          type="submit"
+          className="border-2 border-green-500 bg-green-900/30 text-green-400 px-4 md:px-8 font-bold tracking-widest hover:bg-green-500 hover:text-black transition-none shrink-0"
+        >
+          SEND
+        </button>
+      </form>
     </div>
   );
 }
