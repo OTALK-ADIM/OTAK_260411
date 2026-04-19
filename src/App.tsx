@@ -17,6 +17,7 @@ import Signup from "./pages/signup";
 import Rules from "./pages/rules";
 import PublicProfile from "./pages/public-profile";
 import Onboarding from "./pages/onboarding";
+import OpenChatRoom from "./pages/open-chat-room";
 
 type AuthState = "LOADING" | "UNAUTH" | "ONBOARDING" | "PENDING" | "APPROVED";
 
