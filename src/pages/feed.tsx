@@ -4,63 +4,86 @@ import { supabase } from "../lib/supabase";
 
 export default function Feed() {
   const [, setLocation] = useLocation();
+  const [isApproved, setIsApproved] = useState<boolean>(false);
   const [posts, setPosts] = useState<any[]>([]);
-  const [filter, setFilter] = useState("ALL");
-  const [sort, setSort] = useState("NEWEST");
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      const { data } = await supabase.from("posts").select("*, comments(count)").order("created_at", { ascending: false });
-      if (data) setPosts(data);
+    const fetchUserStatusAndPosts = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase.from("profiles").select("is_approved").eq("id", user.id).maybeSingle();
+        if (profile) setIsApproved(profile.is_approved);
+      }
+      
+      // 💡 게시글과 함께 댓글 개수(신호 수)도 조인해서 가져옵니다.
+      const { data: fetchedPosts } = await supabase.from("posts").select("*, comments(count)").order("created_at", { ascending: false });
+      if (fetchedPosts) setPosts(fetchedPosts);
     };
-    fetchPosts();
+    fetchUserStatusAndPosts();
   }, []);
 
-  let displayed = [...posts];
-  if (filter !== "ALL") displayed = displayed.filter(p => p.category === filter);
-  
-  if (sort === "HOT") {
-    displayed.sort((a, b) => (b.comments?.[0]?.count || 0) - (a.comments?.[0]?.count || 0));
-  } else if (sort === "OLDEST") {
-    displayed.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-  }
-
   return (
-    <div className="w-full flex flex-col font-mono pb-20 text-green-500">
-      <div className="flex justify-between items-end border-b-2 border-green-900 pb-4 mb-4 mt-6">
-        <h1 className="text-2xl font-bold tracking-tighter">[ COMM_FEED ]</h1>
-        <button onClick={() => setLocation("/write")} className="border border-green-500 px-4 py-1 font-bold hover:bg-green-500 hover:text-black">+ NEW</button>
-      </div>
-
-      {/* 필터 & 정렬 바 */}
-      <div className="flex flex-col md:flex-row justify-between gap-2 mb-6 bg-black border border-green-900 p-2">
-        <div className="flex gap-1 overflow-x-auto">
-          {["ALL", "일반", "정보", "질문", "덕질"].map(c => (
-            <button key={c} onClick={() => setFilter(c)} className={`px-2 py-1 text-[10px] border shrink-0 ${filter === c ? "bg-green-500 text-black font-bold" : "border-green-900 text-green-700"}`}>
-              {c}
-            </button>
-          ))}
+    <div className="w-full flex flex-col gap-6 font-mono pb-20">
+      
+      <div className="flex justify-between items-end px-2 mt-4 md:mt-8 mb-4 border-b-2 border-green-900 pb-4">
+        <div className="text-xl md:text-3xl font-bold text-green-500 tracking-tighter">
+          [ COMM_FEED ]
         </div>
-        <select value={sort} onChange={(e) => setSort(e.target.value)} className="bg-black border border-green-900 text-[10px] text-green-500 p-1 outline-none">
-          <option value="NEWEST">최신순</option>
-          <option value="OLDEST">오래된순</option>
-          <option value="HOT">시그널(댓글)순</option>
-        </select>
+        {isApproved ? (
+          <div 
+            onClick={() => setLocation("/write")}
+            className="border border-green-500 bg-green-950/20 text-green-400 px-4 py-2 hover:bg-green-500 hover:text-black font-bold text-sm cursor-pointer transition-none"
+          >
+            + NEW_TRANSMISSION
+          </div>
+        ) : null}
       </div>
 
-      <div className="flex flex-col border-t border-green-500">
-        {displayed.map((p, i) => (
-          <div key={p.id} onClick={() => setLocation(`/post/${p.id}`)} className="flex items-center p-4 border-b border-green-900 hover:bg-green-950/40 cursor-pointer group">
-            <span className="w-12 text-[10px] text-green-900">No.{displayed.length - i}</span>
-            <span className="flex-grow font-bold text-green-400 truncate">
-              <span className="opacity-50 font-normal mr-2">[{p.category || '일반'}]</span>
-              {p.title}
-            </span>
-            <span className="text-[10px] border border-green-900 px-2 ml-2 text-green-800 group-hover:text-green-400 group-hover:border-green-400">
-              SIG: {p.comments?.[0]?.count || 0}
-            </span>
-          </div>
-        ))}
+      <div className="w-full flex flex-col border-t-2 border-green-500 bg-black">
+        {posts.length === 0 ? (
+          <div className="p-10 text-center text-green-700 animate-pulse font-bold tracking-widest">[ NO_DATA_FOUND ]</div>
+        ) : (
+          posts.map((post, index) => {
+            let dateDisplay = "N/A";
+            if (post.created_at) {
+              const d = new Date(post.created_at);
+              if (d.getFullYear() > 1970) {
+                dateDisplay = `${d.getMonth()+1}/${d.getDate()} ${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
+              }
+            }
+            
+            // 💡 댓글 개수를 시그널로 표시
+            const signalCount = post.comments?.[0]?.count || 0;
+            
+            return (
+              <div 
+                key={post.id} 
+                onClick={() => setLocation(`/post/${post.id}`)}
+                className="flex flex-col md:flex-row border-b border-green-900 text-green-500 p-4 hover:bg-green-950/40 transition-none cursor-pointer group"
+              >
+                <div className="flex justify-between md:w-32 text-xs md:text-sm text-green-700 font-bold mb-2 md:mb-0 shrink-0">
+                  <span>No.{posts.length - index}</span>
+                  <span className="md:hidden">{dateDisplay}</span>
+                </div>
+                <div className="flex-grow text-left truncate pl-0 md:pl-4 font-bold text-base md:text-lg text-green-400 group-hover:text-green-300">
+                  <span className="text-green-800 mr-2 font-normal text-xs md:text-sm">
+                    [{post.category || '일반'}]
+                  </span>
+                  {post.title}
+                </div>
+                <div className="flex justify-between md:justify-end items-center md:w-48 mt-3 md:mt-0 shrink-0">
+                  {/* 💡 조회수 대신 SIGNALS(댓글 수) 표시 */}
+                  <span className={`text-[10px] md:text-xs font-bold px-2 py-1 border ${signalCount > 0 ? "border-green-500 text-green-400" : "border-green-900 text-green-800"}`}>
+                    SIGNALS: {signalCount}
+                  </span>
+                  <span className="hidden md:inline-block text-xs font-bold text-green-700 ml-4 w-20 text-right">
+                    {dateDisplay}
+                  </span>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

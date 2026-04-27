@@ -1,70 +1,131 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { supabase } from "../lib/supabase";
 
 export default function PostDetail() {
   const [, params] = useRoute("/post/:id");
   const [, setLocation] = useLocation();
-  const [currentUser, setCurrentUser] = useState<any>(null);
   const [post, setPost] = useState<any>(null);
-  const [isSaved, setIsSaved] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(0);
+  const [authorProfile, setAuthorProfile] = useState<any>(null);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const commentInputRef = useRef<HTMLTextAreaElement>(null); // 💡 스크롤용 ref
 
-  const fetchData = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setCurrentUser(user);
-    
-    const { data: postData } = await supabase.from("posts").select("*").eq("id", params?.id).maybeSingle();
-    if (postData) {
-      setPost(postData);
-      // 수정 제한 시간 계산 (10분)
-      const diff = (new Date().getTime() - new Date(postData.created_at).getTime()) / (1000 * 60);
-      setTimeLeft(Math.max(0, 10 - diff));
-    }
+  const fetchPostAndComments = async () => {
+    if (!params?.id) return;
+    const { data: postData } = await supabase.from("posts").select("*").eq("id", params.id).maybeSingle();
+    if (!postData) return setLocation("/feed");
+    setPost(postData);
 
-    if (user) {
-      const { data: saved } = await supabase.from("saved_posts").select("*").eq("user_id", user.id).eq("post_id", params?.id).maybeSingle();
-      setIsSaved(!!saved);
+    const { data: profileData } = await supabase.from("profiles").select("*").eq("id", postData.author).maybeSingle();
+    if (profileData) setAuthorProfile(profileData);
+
+    const { data: commentData } = await supabase.from("comments").select("*").eq("post_id", params.id).order("created_at", { ascending: true });
+    if (commentData) {
+      const userIds = [...new Set(commentData.map(c => c.user_id))];
+      const { data: profilesData } = await supabase.from("profiles").select("id, nickname").in("id", userIds);
+      const profilesMap = profilesData?.reduce((acc, p) => ({ ...acc, [p.id]: p.nickname }), {}) || {};
+      setComments(commentData.map(c => ({ ...c, nickname: profilesMap[c.user_id] || "UNKNOWN" })));
     }
+    setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, [params?.id]);
+  useEffect(() => { fetchPostAndComments(); }, [params?.id]);
 
-  const toggleSave = async () => {
-    if (!currentUser) return;
-    if (isSaved) {
-      await supabase.from("saved_posts").delete().eq("user_id", currentUser.id).eq("post_id", post.id);
-    } else {
-      await supabase.from("saved_posts").insert({ user_id: currentUser.id, post_id: post.id });
-    }
-    setIsSaved(!isSaved);
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase.from("comments").insert({
+        post_id: post.id,
+        user_id: user.id,
+        content: newComment,
+      });
+
+      if (!error && post.author !== user.id) {
+        const { data: myProfile } = await supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle();
+        await supabase.from("notifications").insert({
+          target_user_id: post.author,
+          from_nickname: myProfile?.nickname || "UNKNOWN",
+          type: 'COMMENT',
+          related_id: post.id 
+        });
+      }
+      setNewComment("");
+      fetchPostAndComments();
+    } catch (e) { console.error(e); } finally { setIsSubmitting(false); }
   };
+
+  // 💡 인용(Quote) 기능: 버튼 누르면 텍스트박스에 내용 채우고 포커스
+  const handleQuote = (nickname: string, content: string) => {
+    setNewComment(prev => `${prev ? prev + '\n' : ''}> ${nickname} : ${content}\n\n`);
+    commentInputRef.current?.focus();
+    commentInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  if (loading) return <div className="text-green-500 animate-pulse p-10 font-mono">[ ACCESSING_DATA... ]</div>;
 
   return (
-    <div className="w-full flex flex-col font-mono p-2 text-green-500 pb-20">
-      <div className="flex justify-between items-center mb-6 border-b border-green-900 pb-2">
-        <div className="text-[10px] text-green-800 uppercase tracking-widest">&gt; SIGNAL_ID: {params?.id?.slice(0,8)}</div>
-        <div className="flex gap-2">
-          {/* 10분 내에만 수정 버튼 노출 */}
-          {currentUser?.id === post?.author && timeLeft > 0 && (
-            <button onClick={() => setLocation(`/edit/${post.id}`)} className="border border-green-500 px-2 py-1 text-[10px] hover:bg-green-500 hover:text-black">
-              [ EDIT_LOCK: {Math.floor(timeLeft)}m ]
-            </button>
-          )}
-          <button onClick={toggleSave} className={`border px-2 py-1 text-[10px] font-bold ${isSaved ? "bg-green-500 text-black" : "border-green-800 text-green-700"}`}>
-            {isSaved ? "[ ARCHIVED ]" : "[ SAVE ]"}
-          </button>
+    <div className="w-full flex flex-col font-mono mt-4 md:mt-8 px-2 md:px-0 pb-32">
+      <div className="w-full border-b-2 border-green-900 pb-6 mb-10">
+        <div className="flex justify-between items-start mb-4">
+          <div className="text-green-700 text-xs font-bold tracking-widest">&gt; CATEGORY: [{post.category || "GENERAL"}]</div>
+          <div onClick={() => setLocation(`/profile/${authorProfile?.id}`)} className="border border-green-800 bg-green-950/30 px-3 py-1 text-green-400 cursor-pointer hover:bg-green-500 hover:text-black font-bold text-[10px] tracking-widest">
+            AUTHOR: {authorProfile?.nickname}
+          </div>
         </div>
+        <h1 className="text-2xl md:text-4xl font-bold text-green-500 leading-snug">{post.title}</h1>
       </div>
       
-      <h1 className="text-2xl md:text-3xl font-bold mb-6 text-green-400">{post?.title}</h1>
-      <div className="min-h-[30vh] border-l-2 border-green-900 pl-4 py-2 bg-black text-lg md:text-xl leading-relaxed whitespace-pre-wrap mb-10">
-        {post?.content}
+      <div className="text-lg md:text-2xl text-green-400 leading-relaxed whitespace-pre-wrap min-h-[30vh] mb-16 p-4 border-l-2 border-green-800 bg-black">
+        {post.content}
       </div>
-      
-      {/* 댓글 영역은 기존 코드 유지 */}
-      <div className="mt-10 border-t border-dashed border-green-900 pt-10">
-        <button onClick={() => setLocation("/feed")} className="text-xs text-green-800 hover:text-green-500">&lt; RETURN_TO_FEED</button>
+
+      <div className="w-full border-t-2 border-green-900 pt-10">
+        <h3 className="text-lg md:text-xl font-bold text-green-600 mb-8 tracking-widest">
+          [ SIGNAL_LOGS ] ({comments.length})
+        </h3>
+        
+        <div className="flex flex-col gap-6 mb-10">
+          {comments.map((c) => (
+            <div key={c.id} className="border border-green-900 p-4 bg-black relative group">
+              {/* 💡 인용 버튼 추가 */}
+              <button 
+                onClick={() => handleQuote(c.nickname, c.content)}
+                className="absolute top-2 right-2 text-[10px] border border-green-800 text-green-700 px-2 py-1 opacity-0 group-hover:opacity-100 hover:bg-green-800 hover:text-black transition-none font-bold"
+              >
+                [ QUOTE ]
+              </button>
+              
+              <div className="flex items-center gap-2 mb-3">
+                <span onClick={() => setLocation(`/profile/${c.user_id}`)} className="font-bold text-green-500 cursor-pointer hover:underline underline-offset-4 decoration-dashed">@{c.nickname}</span>
+                <span className="text-[10px] text-green-800">{new Date(c.created_at).toLocaleString()}</span>
+              </div>
+              <p className="text-base md:text-lg text-green-400 whitespace-pre-wrap">{c.content}</p>
+            </div>
+          ))}
+        </div>
+
+        <form onSubmit={handleCommentSubmit} className="flex flex-col gap-4">
+          <textarea 
+            ref={commentInputRef}
+            value={newComment} 
+            onChange={(e) => setNewComment(e.target.value)} 
+            className="w-full bg-green-950/10 border-2 border-green-900 text-green-400 p-4 text-base h-40 outline-none focus:border-green-500 resize-none font-mono leading-relaxed" 
+            placeholder="> 주파수 응답을 입력하십시오 (과몰입 환영)..." 
+          />
+          <button type="submit" disabled={isSubmitting} className="self-end border-2 border-green-500 bg-black text-green-400 px-8 py-3 font-bold hover:bg-green-500 hover:text-black transition-none tracking-widest">
+            {isSubmitting ? "[ SENDING... ]" : "[ TRANSMIT_SIGNAL ]"}
+          </button>
+        </form>
       </div>
     </div>
   );

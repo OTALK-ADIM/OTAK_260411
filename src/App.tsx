@@ -18,7 +18,6 @@ import Rules from "./pages/rules";
 import PublicProfile from "./pages/public-profile";
 import Onboarding from "./pages/onboarding";
 import OpenChatRoom from "./pages/open-chat-room";
-import Archive from "./pages/archive"; 
 
 type AuthState = "LOADING" | "UNAUTH" | "ONBOARDING" | "PENDING" | "APPROVED";
 
@@ -170,7 +169,6 @@ export default function App() {
               <Route path="/profile" component={Profile} />
               <Route path="/write" component={WritePost} />
               <Route path="/post/:id" component={PostDetail} />
-              <Route path="/archive" component={Archive} /> {/* 추가됨 */}
               <Route path="/edit/:id" component={PostEdit} />
               <Route path="/chat-list" component={ChatList} />
               <Route path="/chat/:id" component={ChatRoom} />
