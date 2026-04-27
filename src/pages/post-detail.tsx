@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRoute, useLocation } from "wouter";
 import { supabase } from "../lib/supabase";
 
@@ -11,6 +11,8 @@ export default function PostDetail() {
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const commentInputRef = useRef<HTMLTextAreaElement>(null); // 💡 스크롤용 ref
 
   const fetchPostAndComments = async () => {
     if (!params?.id) return;
@@ -50,7 +52,6 @@ export default function PostDetail() {
 
       if (!error && post.author !== user.id) {
         const { data: myProfile } = await supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle();
-        // 💡 알람에 related_id(현재 글 ID)를 함께 저장!
         await supabase.from("notifications").insert({
           target_user_id: post.author,
           from_nickname: myProfile?.nickname || "UNKNOWN",
@@ -63,34 +64,67 @@ export default function PostDetail() {
     } catch (e) { console.error(e); } finally { setIsSubmitting(false); }
   };
 
+  // 💡 인용(Quote) 기능: 버튼 누르면 텍스트박스에 내용 채우고 포커스
+  const handleQuote = (nickname: string, content: string) => {
+    setNewComment(prev => `${prev ? prev + '\n' : ''}> ${nickname} : ${content}\n\n`);
+    commentInputRef.current?.focus();
+    commentInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
   if (loading) return <div className="text-green-500 animate-pulse p-10 font-mono">[ ACCESSING_DATA... ]</div>;
 
   return (
-    <div className="w-full flex flex-col font-mono mt-4 md:mt-8 px-4 md:px-0 pb-32">
+    <div className="w-full flex flex-col font-mono mt-4 md:mt-8 px-2 md:px-0 pb-32">
       <div className="w-full border-b-2 border-green-900 pb-6 mb-10">
         <div className="flex justify-between items-start mb-4">
-          <div className="text-green-700 text-xs">&gt; CATEGORY: [{post.category || "GENERAL"}]</div>
-          <div onClick={() => setLocation(`/profile/${authorProfile?.id}`)} className="border border-green-800 bg-green-950/30 px-3 py-1 text-green-400 cursor-pointer hover:bg-green-500 hover:text-black font-bold text-sm">AUTHOR: {authorProfile?.nickname}</div>
+          <div className="text-green-700 text-xs font-bold tracking-widest">&gt; CATEGORY: [{post.category || "GENERAL"}]</div>
+          <div onClick={() => setLocation(`/profile/${authorProfile?.id}`)} className="border border-green-800 bg-green-950/30 px-3 py-1 text-green-400 cursor-pointer hover:bg-green-500 hover:text-black font-bold text-[10px] tracking-widest">
+            AUTHOR: {authorProfile?.nickname}
+          </div>
         </div>
-        <h1 className="text-3xl md:text-5xl font-bold text-green-500">{post.title}</h1>
+        <h1 className="text-2xl md:text-4xl font-bold text-green-500 leading-snug">{post.title}</h1>
       </div>
-      <div className="text-2xl md:text-4xl text-green-400 leading-relaxed whitespace-pre-wrap min-h-[30vh] mb-16">{post.content}</div>
-      <div className="w-full border-t-2 border-dashed border-green-900 pt-10">
-        <h3 className="text-xl font-bold text-green-600 mb-6">[ COMMENTS_LOG ] ({comments.length})</h3>
+      
+      <div className="text-lg md:text-2xl text-green-400 leading-relaxed whitespace-pre-wrap min-h-[30vh] mb-16 p-4 border-l-2 border-green-800 bg-black">
+        {post.content}
+      </div>
+
+      <div className="w-full border-t-2 border-green-900 pt-10">
+        <h3 className="text-lg md:text-xl font-bold text-green-600 mb-8 tracking-widest">
+          [ SIGNAL_LOGS ] ({comments.length})
+        </h3>
+        
         <div className="flex flex-col gap-6 mb-10">
           {comments.map((c) => (
-            <div key={c.id} className="border-l-4 border-green-800 pl-4 py-2">
-              <p className="text-lg md:text-xl text-green-400 mb-2">{c.content}</p>
-              <div className="flex justify-between text-xs text-green-800">
-                <span>{new Date(c.created_at).toLocaleString()}</span>
-                <span onClick={() => setLocation(`/profile/${c.user_id}`)} className="font-bold text-green-600 cursor-pointer">@{c.nickname}</span>
+            <div key={c.id} className="border border-green-900 p-4 bg-black relative group">
+              {/* 💡 인용 버튼 추가 */}
+              <button 
+                onClick={() => handleQuote(c.nickname, c.content)}
+                className="absolute top-2 right-2 text-[10px] border border-green-800 text-green-700 px-2 py-1 opacity-0 group-hover:opacity-100 hover:bg-green-800 hover:text-black transition-none font-bold"
+              >
+                [ QUOTE ]
+              </button>
+              
+              <div className="flex items-center gap-2 mb-3">
+                <span onClick={() => setLocation(`/profile/${c.user_id}`)} className="font-bold text-green-500 cursor-pointer hover:underline underline-offset-4 decoration-dashed">@{c.nickname}</span>
+                <span className="text-[10px] text-green-800">{new Date(c.created_at).toLocaleString()}</span>
               </div>
+              <p className="text-base md:text-lg text-green-400 whitespace-pre-wrap">{c.content}</p>
             </div>
           ))}
         </div>
+
         <form onSubmit={handleCommentSubmit} className="flex flex-col gap-4">
-          <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} className="w-full bg-black border-2 border-green-900 text-green-500 p-4 text-lg h-32 outline-none focus:border-green-500" placeholder="시스템 코멘트 입력..." />
-          <button type="submit" className="self-end border-2 border-green-500 bg-black text-green-400 px-8 py-3 font-bold hover:bg-green-500 hover:text-black transition-none">[ ADD_COMMENT ]</button>
+          <textarea 
+            ref={commentInputRef}
+            value={newComment} 
+            onChange={(e) => setNewComment(e.target.value)} 
+            className="w-full bg-green-950/10 border-2 border-green-900 text-green-400 p-4 text-base h-40 outline-none focus:border-green-500 resize-none font-mono leading-relaxed" 
+            placeholder="> 주파수 응답을 입력하십시오 (과몰입 환영)..." 
+          />
+          <button type="submit" disabled={isSubmitting} className="self-end border-2 border-green-500 bg-black text-green-400 px-8 py-3 font-bold hover:bg-green-500 hover:text-black transition-none tracking-widest">
+            {isSubmitting ? "[ SENDING... ]" : "[ TRANSMIT_SIGNAL ]"}
+          </button>
         </form>
       </div>
     </div>
