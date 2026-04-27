@@ -65,15 +65,26 @@ export default function Profile() {
   };
 
   const handleDeletePost = async (postId: string) => {
-    if (!confirm("정말 이 데이터를 영구 삭제하시겠습니까?")) return;
-    await supabase.from("posts").delete().eq("id", postId);
-    fetchMyData();
+    if (!confirm("정말 이 데이터를 삭제하시겠습니까? 관련 댓글도 함께 삭제될 수 있습니다.")) return;
+    try {
+      await supabase.from("comments").delete().eq("post_id", postId);
+      const { error } = await supabase.from("posts").delete().eq("id", postId);
+      if (error) throw error;
+      fetchMyData();
+    } catch (error: any) {
+      alert(`[에러] 삭제 실패: ${error.message}`);
+    }
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm("정말 이 코멘트를 영구 삭제하시겠습니까?")) return;
-    await supabase.from("comments").delete().eq("id", commentId);
-    fetchMyData();
+    if (!confirm("정말 이 코멘트를 삭제하시겠습니까?")) return;
+    try {
+      const { error } = await supabase.from("comments").delete().eq("id", commentId);
+      if (error) throw error;
+      fetchMyData();
+    } catch (error: any) {
+      alert(`[에러] 삭제 실패: ${error.message}`);
+    }
   };
 
   if (loading) return <div className="text-green-500 animate-pulse p-10 font-mono text-center">[ ACCESSING_USER_ARCHIVE... ]</div>;
@@ -83,7 +94,7 @@ export default function Profile() {
       
       {/* 상단 헤더 */}
       <div className="flex justify-between items-end mb-4 border-b-2 border-dashed border-green-900 pb-2">
-        <h2 className="text-lg md:text-2xl font-bold tracking-widest">[ MY_PROFILE_v1.2 ]</h2>
+        <h2 className="text-lg md:text-2xl font-bold tracking-widest">[ MY_PROFILE_v1.3 ]</h2>
         <button 
           onClick={() => isEditing ? handleUpdateProfile() : setIsEditing(true)}
           className="border border-green-500 bg-black text-green-500 px-2 py-1 text-[10px] md:text-xs hover:bg-green-500 hover:text-black font-bold uppercase transition-none"

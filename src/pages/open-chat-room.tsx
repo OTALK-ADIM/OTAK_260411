@@ -10,24 +10,61 @@ export default function OpenChatRoom() {
   const [roomInfo, setRoomInfo] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  
   const [onlineCount, setOnlineCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const scrollToBottom = (delay = 100) => {
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), delay);
+  };
+
+  const ensureParticipant = async (roomId: string, userId: string) => {
+    const { data: existing } = await supabase
+      .from("open_chat_participants")
+      .select("room_id, user_id")
+      .eq("room_id", roomId)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!existing) {
+      await supabase.from("open_chat_participants").insert({ room_id: roomId, user_id: userId });
+    }
+  };
+
   const fetchInitialData = async () => {
     if (!params?.roomId) return;
-    const { data: room } = await supabase.from("open_chats").select("*").eq("id", params.roomId).maybeSingle();
-    if (!room) return setLocation("/chat-list");
+
+    const { data: room } = await supabase
+      .from("open_chats")
+      .select("*")
+      .eq("id", params.roomId)
+      .maybeSingle();
+
+    if (!room) {
+      setLocation("/chat-list");
+      return;
+    }
     setRoomInfo(room);
 
-    const { data: msgs } = await supabase.from("open_chat_messages").select("*").eq("room_id", params.roomId).order("created_at", { ascending: true });
+    const { data: msgs } = await supabase
+      .from("open_chat_messages")
+      .select("*")
+      .eq("room_id", params.roomId)
+      .order("created_at", { ascending: true })
+      .limit(200);
+
     if (msgs && msgs.length > 0) {
       const userIds = [...new Set(msgs.map(m => m.sender_id))];
-      const { data: profiles } = await supabase.from("profiles").select("id, nickname").in("id", userIds);
-      const profilesMap = profiles?.reduce((acc, p) => ({ ...acc, [p.id]: p.nickname }), {}) || {};
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, nickname")
+        .in("id", userIds);
+      const profilesMap = profiles?.reduce((acc: any, p: any) => ({ ...acc, [p.id]: p.nickname }), {}) || {};
       setMessages(msgs.map(m => ({ ...m, nickname: profilesMap[m.sender_id] || "UNKNOWN" })));
+    } else {
+      setMessages([]);
     }
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+
+    scrollToBottom();
   };
 
   useEffect(() => {
@@ -38,35 +75,53 @@ export default function OpenChatRoom() {
       if (!user) return setLocation("/login");
       setCurrentUser(user);
 
-      const { data: myProfile } = await supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle();
-      if (myProfile) setMyNickname(myProfile.nickname);
+      const { data: myProfile } = await supabase
+        .from("profiles")
+        .select("nickname, is_approved")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (myProfile?.is_approved !== true) {
+        alert("[시스템] 관리자 승인 후 오픈 채팅을 사용할 수 있습니다.");
+        setLocation("/pending");
+        return;
+      }
+
+      setMyNickname(myProfile?.nickname || "UNKNOWN");
+
+      if (params?.roomId) {
+        await ensureParticipant(params.roomId, user.id);
+      }
 
       await fetchInitialData();
 
-      // 💡 핵심 해결책: 오픈 톡방 감지기도 시간을 붙여서 매번 새롭게 만듭니다!
       const uniqueRoomChannel = `room:${params?.roomId}-${Date.now()}`;
       channel = supabase.channel(uniqueRoomChannel);
 
       channel.on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'open_chat_messages', filter: `room_id=eq.${params?.roomId}` },
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "open_chat_messages", filter: `room_id=eq.${params?.roomId}` },
         async (payload: any) => {
           if (payload.new.sender_id === user.id) return;
-          const { data: profile } = await supabase.from("profiles").select("nickname").eq("id", payload.new.sender_id).maybeSingle();
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("nickname")
+            .eq("id", payload.new.sender_id)
+            .maybeSingle();
           const newMsg = { ...payload.new, nickname: profile?.nickname || "UNKNOWN" };
-          setMessages(prev => [...prev, newMsg]);
-          setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+          setMessages(prev => prev.some(m => m.id === newMsg.id) ? prev : [...prev, newMsg]);
+          scrollToBottom();
         }
       );
 
-      channel.on('presence', { event: 'sync' }, () => {
+      channel.on("presence", { event: "sync" }, () => {
         const presenceState = channel.presenceState();
         setOnlineCount(Object.keys(presenceState).length);
       });
 
       channel.subscribe(async (status: string) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ user_id: user.id });
+        if (status === "SUBSCRIBED") {
+          await channel.track({ user_id: user.id, nickname: myProfile?.nickname || "UNKNOWN" });
         }
       });
     };
@@ -79,26 +134,33 @@ export default function OpenChatRoom() {
     if (e) e.preventDefault();
     if (!newMessage.trim() || !currentUser) return;
 
-    const msgContent = newMessage;
-    setNewMessage(""); 
+    const msgContent = newMessage.trim();
+    setNewMessage("");
 
+    const tempId = crypto.randomUUID();
     const tempMsg = {
-      id: crypto.randomUUID(),
+      id: tempId,
       room_id: params?.roomId,
       sender_id: currentUser.id,
       content: msgContent,
       created_at: new Date().toISOString(),
       nickname: myNickname
     };
-    
-    setMessages(prev => [...prev, tempMsg]);
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
 
-    await supabase.from("open_chat_messages").insert({
+    setMessages(prev => [...prev, tempMsg]);
+    scrollToBottom(50);
+
+    const { error } = await supabase.from("open_chat_messages").insert({
       room_id: params?.roomId,
       sender_id: currentUser.id,
       content: msgContent
     });
+
+    if (error) {
+      alert(`[에러] 메시지 전송 실패: ${error.message}`);
+      setMessages(prev => prev.filter(m => m.id !== tempId));
+      setNewMessage(msgContent);
+    }
   };
 
   if (!roomInfo) return <div className="text-blue-500 animate-pulse p-10 font-mono text-center text-xl">[ JOINING_PUBLIC_CHANNEL... ]</div>;
@@ -139,10 +201,10 @@ export default function OpenChatRoom() {
       </div>
 
       <form onSubmit={handleSend} className="flex flex-col md:flex-row gap-4 shrink-0 mt-6">
-        <textarea 
+        <textarea
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
-          onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
           placeholder="[ 공용 통신망 메시지 입력... ] (Enter 전송)"
           className="flex-grow bg-black border-2 border-blue-500 text-blue-400 p-4 text-lg outline-none placeholder:text-blue-900/50 resize-none h-24 md:h-32"
         />

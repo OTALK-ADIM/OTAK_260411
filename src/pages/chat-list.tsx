@@ -19,6 +19,18 @@ export default function ChatList() {
     }
     setCurrentUser(user);
 
+    const { data: myProfile } = await supabase
+      .from("profiles")
+      .select("is_approved")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (myProfile?.is_approved !== true) {
+      alert("[시스템] 관리자 승인 후 통신 센터를 사용할 수 있습니다.");
+      setLocation("/pending");
+      return;
+    }
+
     // 1. 1:1 DM 채팅방 가져오기
     const { data: dmRooms } = await supabase
       .from("chat_rooms")
@@ -79,6 +91,7 @@ export default function ChatList() {
   };
 
   const handleCreateOpenChat = async () => {
+    if (!currentUser) return;
     const name = prompt("[시스템] 생성할 오픈 통신망의 이름을 입력하십시오.");
     if (!name?.trim()) return;
 

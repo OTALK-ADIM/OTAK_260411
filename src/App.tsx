@@ -18,12 +18,18 @@ import Rules from "./pages/rules";
 import PublicProfile from "./pages/public-profile";
 import Onboarding from "./pages/onboarding";
 import OpenChatRoom from "./pages/open-chat-room";
+import Pending from "./pages/pending";
 
 type AuthState = "LOADING" | "UNAUTH" | "ONBOARDING" | "PENDING" | "APPROVED";
+
+const UNAUTH_ALLOWED_PATHS = ["/", "/login", "/signup", "/rules"];
+const PENDING_ALLOWED_PATHS = ["/", "/pending", "/profile", "/rules"];
+const AUTH_ENTRY_PATHS = ["/login", "/signup", "/onboarding", "/pending"];
 
 export default function App() {
   const [authState, setAuthState] = useState<AuthState>("LOADING");
   const [user, setUser] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [location, setLocation] = useLocation();
 
   const getPageTitle = (path: string) => {
@@ -31,30 +37,50 @@ export default function App() {
     if (path === "/login") return "USER_AUTHENTICATION";
     if (path === "/signup") return "NEW_USER_REGISTRATION";
     if (path === "/onboarding") return "ONBOARDING_PROCESS";
+    if (path === "/pending") return "ACCESS_PENDING";
     if (path === "/feed") return "DATA_FEED";
     if (path === "/profile") return "MY_ARCHIVE";
     if (path === "/write") return "DATA_ENTRY";
     if (path === "/chat-list") return "SECURE_COMMS";
     if (path === "/rules") return "NERD_PROTOCOL";
+    if (path === "/admin") return "ADMIN_CONSOLE";
     if (path.startsWith("/post/")) return "DATA_DETAIL";
+    if (path.startsWith("/edit/")) return "DATA_EDIT";
     if (path.startsWith("/chat/")) return "COMMS_LINK";
+    if (path.startsWith("/open-chat/")) return "PUBLIC_COMMS";
     return "SYSTEM_TERMINAL";
   };
 
   useEffect(() => {
     const verifyUser = async (sessionUser: any) => {
       if (!sessionUser) {
+        setIsAdmin(false);
         setAuthState("UNAUTH");
         return;
       }
-      const { data: profile } = await supabase.from("profiles").select("nickname, profile_img_url, is_approved").eq("id", sessionUser.id).maybeSingle();
-      
+
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", sessionUser.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("[profile check failed]", error.message);
+        setIsAdmin(false);
+        setAuthState("ONBOARDING");
+        return;
+      }
+
+      const adminFlag = profile?.is_admin === true || profile?.role === "admin";
+      setIsAdmin(adminFlag);
+
       if (!profile || !profile.nickname || !profile.profile_img_url) {
-        setAuthState("ONBOARDING"); 
+        setAuthState("ONBOARDING");
       } else if (profile.is_approved !== true) {
-        setAuthState("PENDING");    
+        setAuthState("PENDING");
       } else {
-        setAuthState("APPROVED");   
+        setAuthState("APPROVED");
       }
     };
 
@@ -73,26 +99,45 @@ export default function App() {
 
   useEffect(() => {
     if (authState === "LOADING") return;
-    if (authState === "UNAUTH" && location !== "/" && location !== "/login" && location !== "/signup") setLocation("/");
-    if (authState === "ONBOARDING" && location !== "/onboarding") setLocation("/onboarding");
-    if ((authState === "PENDING" || authState === "APPROVED") && (location === "/login" || location === "/onboarding" || location === "/signup")) setLocation("/");
+
+    if (authState === "UNAUTH" && !UNAUTH_ALLOWED_PATHS.includes(location)) {
+      setLocation("/");
+      return;
+    }
+
+    if (authState === "ONBOARDING" && location !== "/onboarding") {
+      setLocation("/onboarding");
+      return;
+    }
+
+    if (authState === "PENDING") {
+      if (!PENDING_ALLOWED_PATHS.includes(location)) {
+        setLocation("/pending");
+      }
+      return;
+    }
+
+    if (authState === "APPROVED" && AUTH_ENTRY_PATHS.includes(location)) {
+      setLocation("/");
+    }
   }, [authState, location, setLocation]);
 
   if (authState === "LOADING") {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center font-mono">
         <div className="text-green-500 animate-pulse text-xl text-center">
-          [ SYSTEM_INITIALIZING... ]<br/>
+          [ SYSTEM_INITIALIZING... ]<br />
           <span className="text-xs opacity-50 tracking-widest mt-2 block">CHECKING_SECURITY_PROTOCOL...</span>
         </div>
       </div>
     );
   }
 
+  const AdminRoute = () => (isAdmin ? <Admin /> : <NotFound />);
+
   return (
     <div className="min-h-screen w-full flex justify-center bg-black px-4 pt-4 pb-12 font-mono text-green-500 selection:bg-green-500 selection:text-black">
       <div className="w-full max-w-[800px] flex flex-col min-h-screen">
-        
         <header className="w-full flex flex-col mb-4 md:mb-8">
           <div className="w-full border border-green-500 py-2 flex justify-center items-center bg-black mb-3">
             <span className="text-green-500 text-sm md:text-base tracking-[0.5em] font-bold">
@@ -107,10 +152,11 @@ export default function App() {
                 <span className={user ? "text-blue-400" : "text-red-500"}>
                   USER: {user ? "ONLINE" : "OFFLINE"}
                 </span>
+                {isAdmin && <span className="text-red-400">AUTH: ADMIN</span>}
               </div>
               {authState === "PENDING" && (
                 <span className="text-[10px] text-red-500 animate-pulse font-bold tracking-widest mt-1">
-                  :: RESTRICTED MODE (심사 진행 중) ::
+                  :: RESTRICTED MODE (관리자 승인 대기 중) ::
                 </span>
               )}
             </div>
@@ -129,8 +175,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* 💡 Link 태그 멸망! div와 onClick으로 교체하여 보라색 테러 완벽 차단 */}
-          <div 
+          <div
             onClick={() => setLocation("/")}
             className="w-full border-2 border-green-500 py-10 md:py-12 flex flex-col items-center justify-center bg-black shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden cursor-pointer"
           >
@@ -142,7 +187,7 @@ export default function App() {
               [ Neo_Geek_Network_System ]
             </p>
           </div>
-          
+
           <div className="w-full flex justify-center items-center mt-6">
             <h2 className="text-2xl md:text-3xl text-green-500 font-bold tracking-[0.1em] drop-shadow-[0_0_8px_rgba(34,197,94,0.6)] bg-black px-4">
               {getPageTitle(location)}
@@ -156,13 +201,24 @@ export default function App() {
               <Route path="/" component={Home} />
               <Route path="/login" component={Login} />
               <Route path="/signup" component={Signup} />
+              <Route path="/rules" component={Rules} />
               <Route component={Home} />
             </Switch>
           )}
 
           {authState === "ONBOARDING" && <Onboarding />}
 
-          {(authState === "PENDING" || authState === "APPROVED") && (
+          {authState === "PENDING" && (
+            <Switch>
+              <Route path="/" component={Home} />
+              <Route path="/pending" component={Pending} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/rules" component={Rules} />
+              <Route component={Pending} />
+            </Switch>
+          )}
+
+          {authState === "APPROVED" && (
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/feed" component={Feed} />
@@ -171,8 +227,8 @@ export default function App() {
               <Route path="/post/:id" component={PostDetail} />
               <Route path="/edit/:id" component={PostEdit} />
               <Route path="/chat-list" component={ChatList} />
-              <Route path="/chat/:id" component={ChatRoom} />
-              <Route path="/admin" component={Admin} />
+              <Route path="/chat/:roomId" component={ChatRoom} />
+              <Route path="/admin" component={AdminRoute} />
               <Route path="/rules" component={Rules} />
               <Route path="/profile/:userId" component={PublicProfile} />
               <Route path="/open-chat/:roomId" component={OpenChatRoom} />
@@ -182,7 +238,7 @@ export default function App() {
         </main>
 
         <footer className="w-full border-t border-green-900/50 pt-4 mt-20 text-center text-xs text-green-800">
-          V. 1.8.8 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
+          V. 1.9.0 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </footer>
       </div>
     </div>
