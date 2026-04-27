@@ -13,8 +13,21 @@ export default function PostDetail() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [myProfile, setMyProfile] = useState<any>(null);
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
+
+  const fetchSaveState = async (userId: string, postId: string) => {
+    const { data, error } = await supabase
+      .from("post_saves")
+      .select("post_id")
+      .eq("user_id", userId)
+      .eq("post_id", postId)
+      .maybeSingle();
+
+    if (!error) setIsSaved(!!data);
+  };
 
   const fetchPostAndComments = async () => {
     if (!params?.id) return;
@@ -30,6 +43,7 @@ export default function PostDetail() {
         .eq("id", user.id)
         .maybeSingle();
       setMyProfile(profile);
+      await fetchSaveState(user.id, params.id);
     }
 
     const { data: postData } = await supabase
@@ -74,6 +88,33 @@ export default function PostDetail() {
 
   useEffect(() => { fetchPostAndComments(); }, [params?.id]);
 
+  const handleToggleSave = async () => {
+    if (!params?.id || !currentUser || isSaving) return;
+    setIsSaving(true);
+
+    try {
+      if (isSaved) {
+        const { error } = await supabase
+          .from("post_saves")
+          .delete()
+          .eq("user_id", currentUser.id)
+          .eq("post_id", params.id);
+        if (error) throw error;
+        setIsSaved(false);
+      } else {
+        const { error } = await supabase
+          .from("post_saves")
+          .insert({ user_id: currentUser.id, post_id: params.id });
+        if (error) throw error;
+        setIsSaved(true);
+      }
+    } catch (error: any) {
+      alert(`[ERROR] 저장 처리 실패: ${error.message}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || isSubmitting) return;
@@ -108,12 +149,15 @@ export default function PostDetail() {
       if (error) throw error;
 
       if (post.author !== user.id) {
-        await supabase.from("notifications").insert({
+        const { error: notifError } = await supabase.from("notifications").insert({
           target_user_id: post.author,
           from_nickname: profile?.nickname || "UNKNOWN",
           type: "COMMENT",
-          related_id: post.id
+          related_id: post.id,
+          is_read: false
         });
+
+        if (notifError) console.error("[notification insert failed]", notifError.message);
       }
 
       setNewComment("");
@@ -141,7 +185,14 @@ export default function PostDetail() {
       <div className="w-full border-b-2 border-green-900 pb-6 mb-10">
         <div className="flex justify-between items-start mb-4 gap-2">
           <div className="text-green-700 text-xs font-bold tracking-widest">&gt; CATEGORY: [{post.category || "GENERAL"}]</div>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+            <button
+              onClick={handleToggleSave}
+              disabled={!currentUser || isSaving}
+              className={`${isSaved ? "border-yellow-500 bg-yellow-500 text-black" : "border-yellow-700 bg-yellow-950/20 text-yellow-500"} border px-3 py-1 cursor-pointer hover:bg-yellow-500 hover:text-black font-bold text-[10px] tracking-widest disabled:opacity-40 disabled:cursor-not-allowed`}
+            >
+              {isSaving ? "[ ... ]" : isSaved ? "[ ★ SAVED ]" : "[ ☆ SAVE ]"}
+            </button>
             {canEdit && (
               <button
                 onClick={() => setLocation(`/edit/${post.id}`)}
@@ -201,7 +252,7 @@ export default function PostDetail() {
           </form>
         ) : (
           <div className="border-2 border-yellow-900/70 bg-yellow-950/10 text-yellow-500 p-4 text-sm leading-relaxed font-bold">
-            [ READ_ONLY_MODE ] 입국 심사 중에는 글과 댓글을 볼 수 있지만, 댓글 작성은 관리자 승인 후 가능합니다.
+            [ READ_ONLY_MODE ] 입국 심사 중에는 글과 댓글을 볼 수 있지만, 댓글 작성은 관리자 승인 후 가능합니다. 글 저장은 가능합니다.
           </div>
         )}
       </div>
