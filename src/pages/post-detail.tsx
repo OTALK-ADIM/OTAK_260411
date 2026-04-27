@@ -134,6 +134,7 @@ export default function PostDetail() {
   if (loading) return <div className="text-green-500 animate-pulse p-10 font-mono">[ ACCESSING_DATA... ]</div>;
 
   const canEdit = currentUser && post && (post.author === currentUser.id || myProfile?.is_admin === true || myProfile?.role === "admin");
+  const canComment = currentUser && myProfile?.is_approved === true;
 
   return (
     <div className="w-full flex flex-col font-mono mt-4 md:mt-8 px-2 md:px-0 pb-32">
@@ -185,18 +186,24 @@ export default function PostDetail() {
           ))}
         </div>
 
-        <form onSubmit={handleCommentSubmit} className="flex flex-col gap-4">
-          <textarea
-            ref={commentInputRef}
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            className="w-full bg-green-950/10 border-2 border-green-900 text-green-400 p-4 text-base h-40 outline-none focus:border-green-500 resize-none font-mono leading-relaxed"
-            placeholder="> 주파수 응답을 입력하십시오 (과몰입 환영)..."
-          />
-          <button type="submit" disabled={isSubmitting} className="self-end border-2 border-green-500 bg-black text-green-400 px-8 py-3 font-bold hover:bg-green-500 hover:text-black transition-none tracking-widest disabled:opacity-50">
-            {isSubmitting ? "[ SENDING... ]" : "[ TRANSMIT_SIGNAL ]"}
-          </button>
-        </form>
+        {canComment ? (
+          <form onSubmit={handleCommentSubmit} className="flex flex-col gap-4">
+            <textarea
+              ref={commentInputRef}
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              className="w-full bg-green-950/10 border-2 border-green-900 text-green-400 p-4 text-base h-40 outline-none focus:border-green-500 resize-none font-mono leading-relaxed"
+              placeholder="> 주파수 응답을 입력하십시오 (과몰입 환영)..."
+            />
+            <button type="submit" disabled={isSubmitting} className="self-end border-2 border-green-500 bg-black text-green-400 px-8 py-3 font-bold hover:bg-green-500 hover:text-black transition-none tracking-widest disabled:opacity-50">
+              {isSubmitting ? "[ SENDING... ]" : "[ TRANSMIT_SIGNAL ]"}
+            </button>
+          </form>
+        ) : (
+          <div className="border-2 border-yellow-900/70 bg-yellow-950/10 text-yellow-500 p-4 text-sm leading-relaxed font-bold">
+            [ READ_ONLY_MODE ] 입국 심사 중에는 글과 댓글을 볼 수 있지만, 댓글 작성은 관리자 승인 후 가능합니다.
+          </div>
+        )}
       </div>
     </div>
   );
