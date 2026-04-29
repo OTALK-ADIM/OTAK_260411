@@ -77,9 +77,15 @@ export default function OpenChatRoom() {
 
       const { data: myProfile } = await supabase
         .from("profiles")
-        .select("nickname, is_approved")
+        .select("nickname, is_approved, is_suspended")
         .eq("id", user.id)
         .maybeSingle();
+
+      if (myProfile?.is_suspended === true) {
+        alert("[시스템] 제재 상태에서는 오픈 채팅을 사용할 수 없습니다.");
+        setLocation("/pending");
+        return;
+      }
 
       if (myProfile?.is_approved !== true) {
         alert("[시스템] 관리자 승인 후 오픈 채팅을 사용할 수 있습니다.");

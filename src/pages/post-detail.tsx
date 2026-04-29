@@ -15,6 +15,8 @@ export default function PostDetail() {
   const [myProfile, setMyProfile] = useState<any>(null);
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
+  const [workingId, setWorkingId] = useState<string | null>(null);
 
   const commentInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -27,6 +29,15 @@ export default function PostDetail() {
       .maybeSingle();
 
     if (!error) setIsSaved(!!data);
+  };
+
+  const fetchBlocks = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("user_blocks")
+      .select("blocked_id")
+      .eq("blocker_id", userId);
+
+    if (!error && data) setBlockedUserIds(data.map((row: any) => row.blocked_id));
   };
 
   const fetchPostAndComments = async () => {
@@ -44,6 +55,7 @@ export default function PostDetail() {
         .maybeSingle();
       setMyProfile(profile);
       await fetchSaveState(user.id, params.id);
+      await fetchBlocks(user.id);
     }
 
     const { data: postData } = await supabase
@@ -111,13 +123,68 @@ export default function PostDetail() {
     } catch (error: any) {
       const msg = String(error?.message || "");
       if (msg.includes("post_saves") || msg.includes("schema cache")) {
-        alert("[ERROR] 저장 기능 DB 테이블이 아직 생성되지 않았습니다. Supabase SQL Editor에서 supabase_required.sql을 먼저 실행한 뒤 Vercel을 새로고침해 주세요.");
+        alert("[ERROR] 저장 기능 DB 테이블이 아직 생성되지 않았습니다. Supabase SQL Editor에서 SQL 패치를 먼저 실행한 뒤 Vercel을 새로고침해 주세요.");
       } else {
         alert("[ERROR] 저장 처리 실패: " + error.message);
       }
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleReport = async (targetType: "POST" | "COMMENT" | "USER", targetId: string, targetUserId?: string | null) => {
+    if (!currentUser || workingId) {
+      if (!currentUser) alert("[시스템] 신고하려면 로그인이 필요합니다.");
+      return;
+    }
+    if (targetUserId && targetUserId === currentUser.id) {
+      alert("[시스템] 자신의 데이터는 신고할 수 없습니다.");
+      return;
+    }
+
+    const reason = prompt("신고 사유를 입력하세요. 예: 욕설, 괴롭힘, 불법정보, 광고, 개인정보 노출 등");
+    if (!reason?.trim()) return;
+
+    setWorkingId(`report-${targetType}-${targetId}`);
+    const { error } = await supabase.from("reports").insert({
+      reporter_id: currentUser.id,
+      target_type: targetType,
+      target_id: String(targetId),
+      target_user_id: targetUserId || null,
+      reason: reason.trim(),
+      status: "PENDING"
+    });
+    setWorkingId(null);
+
+    if (error) alert(`[ERROR] 신고 접수 실패: ${error.message}`);
+    else alert("[시스템] 신고가 접수되었습니다. 관리자가 확인합니다.");
+  };
+
+  const handleToggleBlock = async (targetUserId: string, nickname?: string) => {
+    if (!currentUser || workingId || targetUserId === currentUser.id) return;
+    const alreadyBlocked = blockedUserIds.includes(targetUserId);
+    const msg = alreadyBlocked
+      ? `${nickname || "이 유저"}의 차단을 해제하시겠습니까?`
+      : `${nickname || "이 유저"}를 차단하시겠습니까? 차단하면 해당 유저의 글/댓글이 숨겨지고 DM 요청을 받지 않습니다.`;
+    if (!confirm(msg)) return;
+
+    setWorkingId(`block-${targetUserId}`);
+    if (alreadyBlocked) {
+      const { error } = await supabase
+        .from("user_blocks")
+        .delete()
+        .eq("blocker_id", currentUser.id)
+        .eq("blocked_id", targetUserId);
+      if (error) alert(`[ERROR] 차단 해제 실패: ${error.message}`);
+      else setBlockedUserIds(prev => prev.filter(id => id !== targetUserId));
+    } else {
+      const { error } = await supabase
+        .from("user_blocks")
+        .insert({ blocker_id: currentUser.id, blocked_id: targetUserId });
+      if (error) alert(`[ERROR] 차단 실패: ${error.message}`);
+      else setBlockedUserIds(prev => [...prev, targetUserId]);
+    }
+    setWorkingId(null);
   };
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
@@ -135,9 +202,14 @@ export default function PostDetail() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("is_approved, nickname")
+        .select("is_approved, is_suspended, nickname")
         .eq("id", user.id)
         .maybeSingle();
+
+      if (profile?.is_suspended === true) {
+        alert("[시스템] 제재 상태에서는 댓글 작성이 제한됩니다.");
+        return;
+      }
 
       if (profile?.is_approved !== true) {
         alert("[시스템] 관리자 승인 후 댓글 작성이 가능합니다.");
@@ -183,7 +255,24 @@ export default function PostDetail() {
   if (loading) return <div className="text-green-500 animate-pulse p-10 font-mono">[ ACCESSING_DATA... ]</div>;
 
   const canEdit = currentUser && post && (post.author === currentUser.id || myProfile?.is_admin === true || myProfile?.role === "admin");
-  const canComment = currentUser && myProfile?.is_approved === true;
+  const canComment = currentUser && myProfile?.is_approved === true && myProfile?.is_suspended !== true;
+  const isAuthorBlocked = post?.author && blockedUserIds.includes(post.author);
+  const visibleComments = comments.filter(c => !blockedUserIds.includes(c.user_id));
+
+  if (isAuthorBlocked) {
+    return (
+      <div className="w-full flex flex-col gap-6 font-mono mt-8 text-green-500">
+        <div className="border-2 border-red-900 bg-red-950/10 p-8 text-center">
+          <h2 className="text-xl font-bold text-red-400 mb-4">[ BLOCKED_USER_CONTENT ]</h2>
+          <p className="text-sm text-red-300/80 leading-relaxed mb-6">차단한 유저의 게시글입니다. 내용을 보려면 차단을 해제하세요.</p>
+          <div className="flex justify-center gap-3">
+            <button onClick={() => setLocation("/feed")} className="border border-green-800 text-green-500 px-4 py-2 text-xs font-bold hover:bg-green-500 hover:text-black">[ BACK_FEED ]</button>
+            <button onClick={() => handleToggleBlock(post.author, authorProfile?.nickname)} className="border border-red-500 text-red-400 px-4 py-2 text-xs font-bold hover:bg-red-500 hover:text-black">[ UNBLOCK ]</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col font-mono mt-4 md:mt-8 px-2 md:px-0 pb-32">
@@ -214,6 +303,12 @@ export default function PostDetail() {
             >
               {isSaving ? "[ ... ]" : isSaved ? "[ ★ SAVED ]" : "[ ☆ SAVE ]"}
             </button>
+            {currentUser && post.author !== currentUser.id && (
+              <>
+                <button onClick={() => handleReport("POST", post.id, post.author)} className="border border-red-900 bg-black px-3 py-1 text-red-500 cursor-pointer hover:bg-red-500 hover:text-black font-bold text-[10px] tracking-widest">[ REPORT ]</button>
+                <button onClick={() => handleToggleBlock(post.author, authorProfile?.nickname)} className="border border-red-900 bg-black px-3 py-1 text-red-500 cursor-pointer hover:bg-red-500 hover:text-black font-bold text-[10px] tracking-widest">[ BLOCK_USER ]</button>
+              </>
+            )}
             {canEdit && (
               <button
                 onClick={() => setLocation(`/edit/${post.id}`)}
@@ -236,20 +331,28 @@ export default function PostDetail() {
 
       <div className="w-full border-t-2 border-green-900 pt-10">
         <h3 className="text-lg md:text-xl font-bold text-green-600 mb-8 tracking-widest">
-          [ SIGNAL_LOGS ] ({comments.length})
+          [ SIGNAL_LOGS ] ({visibleComments.length})
         </h3>
 
         <div className="flex flex-col gap-6 mb-10">
-          {comments.map((c) => (
+          {visibleComments.map((c) => (
             <div key={c.id} className="border border-green-900 p-4 bg-black relative group">
-              <button
-                onClick={() => handleQuote(c.nickname, c.content)}
-                className="absolute top-2 right-2 text-[10px] border border-green-800 text-green-700 px-2 py-1 opacity-0 group-hover:opacity-100 hover:bg-green-800 hover:text-black transition-none font-bold"
-              >
-                [ QUOTE ]
-              </button>
+              <div className="absolute top-2 right-2 flex gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-none">
+                <button
+                  onClick={() => handleQuote(c.nickname, c.content)}
+                  className="text-[10px] border border-green-800 text-green-700 px-2 py-1 hover:bg-green-800 hover:text-black transition-none font-bold"
+                >
+                  [ QUOTE ]
+                </button>
+                {currentUser && c.user_id !== currentUser.id && (
+                  <>
+                    <button onClick={() => handleReport("COMMENT", c.id, c.user_id)} className="text-[10px] border border-red-900 text-red-500 px-2 py-1 hover:bg-red-500 hover:text-black transition-none font-bold">[ REPORT ]</button>
+                    <button onClick={() => handleToggleBlock(c.user_id, c.nickname)} className="text-[10px] border border-red-900 text-red-500 px-2 py-1 hover:bg-red-500 hover:text-black transition-none font-bold">[ BLOCK ]</button>
+                  </>
+                )}
+              </div>
 
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex items-center gap-2 mb-3 pr-48">
                 <span onClick={() => setLocation(`/profile/${c.user_id}`)} className="font-bold text-green-500 cursor-pointer hover:underline underline-offset-4 decoration-dashed">@{c.nickname}</span>
                 <span className="text-[10px] text-green-800">{new Date(c.created_at).toLocaleString()}</span>
               </div>
@@ -273,7 +376,7 @@ export default function PostDetail() {
           </form>
         ) : (
           <div className="border-2 border-yellow-900/70 bg-yellow-950/10 text-yellow-500 p-4 text-sm leading-relaxed font-bold">
-            [ READ_ONLY_MODE ] 입국 심사 중에는 글과 댓글을 볼 수 있지만, 댓글 작성은 관리자 승인 후 가능합니다. 글 저장은 가능합니다.
+            [ READ_ONLY_MODE ] 승인 대기 또는 제재 상태에서는 글과 댓글을 볼 수 있지만, 댓글 작성은 제한됩니다. 글 저장은 가능합니다.
           </div>
         )}
       </div>

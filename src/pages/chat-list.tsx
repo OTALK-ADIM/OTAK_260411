@@ -21,15 +21,27 @@ export default function ChatList() {
 
     const { data: myProfile } = await supabase
       .from("profiles")
-      .select("is_approved")
+      .select("is_approved, is_suspended")
       .eq("id", user.id)
       .maybeSingle();
+
+    if (myProfile?.is_suspended === true) {
+      alert("[시스템] 제재 상태에서는 통신 센터를 사용할 수 없습니다.");
+      setLocation("/pending");
+      return;
+    }
 
     if (myProfile?.is_approved !== true) {
       alert("[시스템] 관리자 승인 후 통신 센터를 사용할 수 있습니다.");
       setLocation("/pending");
       return;
     }
+
+    const { data: blockRows } = await supabase
+      .from("user_blocks")
+      .select("blocked_id")
+      .eq("blocker_id", user.id);
+    const blockedIds = (blockRows || []).map((row: any) => row.blocked_id);
 
     // 1. 1:1 DM 채팅방 가져오기
     const { data: dmRooms } = await supabase
@@ -44,8 +56,8 @@ export default function ChatList() {
         const { data: profile } = await supabase.from("profiles").select("nickname").eq("id", otherUserId).maybeSingle();
         return { ...room, otherNickname: profile?.nickname || "UNKNOWN", otherUserId };
       }));
-      setPendingRequests(enriched.filter(r => r.status === 'PENDING' && r.user2_id === user.id));
-      setActiveChats(enriched.filter(r => r.status === 'ACCEPTED'));
+      setPendingRequests(enriched.filter(r => r.status === 'PENDING' && r.user2_id === user.id && !blockedIds.includes(r.otherUserId)));
+      setActiveChats(enriched.filter(r => r.status === 'ACCEPTED' && !blockedIds.includes(r.otherUserId))); 
     }
 
     // 2. 오픈 톡방 목록 가져오기

@@ -20,12 +20,18 @@ import Onboarding from "./pages/onboarding";
 import OpenChatRoom from "./pages/open-chat-room";
 import Pending from "./pages/pending";
 
-type AuthState = "LOADING" | "UNAUTH" | "ONBOARDING" | "PENDING" | "APPROVED";
+type AuthState = "LOADING" | "UNAUTH" | "ONBOARDING" | "PENDING" | "SUSPENDED" | "APPROVED";
 
 const UNAUTH_ALLOWED_PATHS = ["/", "/login", "/signup", "/rules"];
 const PENDING_ALLOWED_PATHS = ["/", "/pending", "/profile", "/feed", "/rules"];
+const SUSPENDED_ALLOWED_PATHS = ["/", "/pending", "/profile", "/feed", "/rules"];
 const isPendingAllowedPath = (path: string) => (
   PENDING_ALLOWED_PATHS.includes(path)
+  || path.startsWith("/post/")
+  || path.startsWith("/profile/")
+);
+const isSuspendedAllowedPath = (path: string) => (
+  SUSPENDED_ALLOWED_PATHS.includes(path)
   || path.startsWith("/post/")
   || path.startsWith("/profile/")
 );
@@ -82,6 +88,8 @@ export default function App() {
 
       if (!profile || !profile.nickname || !profile.profile_img_url) {
         setAuthState("ONBOARDING");
+      } else if (profile.is_suspended === true) {
+        setAuthState("SUSPENDED");
       } else if (profile.is_approved !== true) {
         setAuthState("PENDING");
       } else {
@@ -117,6 +125,13 @@ export default function App() {
 
     if (authState === "PENDING") {
       if (!isPendingAllowedPath(location)) {
+        setLocation("/pending");
+      }
+      return;
+    }
+
+    if (authState === "SUSPENDED") {
+      if (!isSuspendedAllowedPath(location)) {
         setLocation("/pending");
       }
       return;
@@ -162,6 +177,11 @@ export default function App() {
               {authState === "PENDING" && (
                 <span className="text-[10px] text-red-500 animate-pulse font-bold tracking-widest mt-1">
                   :: RESTRICTED MODE (관리자 승인 대기 중) ::
+                </span>
+              )}
+              {authState === "SUSPENDED" && (
+                <span className="text-[10px] text-red-500 animate-pulse font-bold tracking-widest mt-1">
+                  :: SUSPENDED MODE (제재 적용 중 / 읽기 전용) ::
                 </span>
               )}
             </div>
@@ -225,6 +245,18 @@ export default function App() {
               <Route component={Pending} />
             </Switch>
           )}
+          {authState === "SUSPENDED" && (
+            <Switch>
+              <Route path="/" component={Home} />
+              <Route path="/pending" component={Pending} />
+              <Route path="/feed" component={Feed} />
+              <Route path="/post/:id" component={PostDetail} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/profile/:userId" component={PublicProfile} />
+              <Route path="/rules" component={Rules} />
+              <Route component={Pending} />
+            </Switch>
+          )}
 
           {authState === "APPROVED" && (
             <Switch>
@@ -246,7 +278,7 @@ export default function App() {
         </main>
 
         <footer className="w-full border-t border-green-900/50 pt-4 mt-20 text-center text-xs text-green-800">
-          V. 1.9.1 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
+          V. 1.10.0 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </footer>
       </div>
     </div>

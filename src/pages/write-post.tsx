@@ -35,9 +35,15 @@ export default function WritePost() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("is_approved")
+        .select("is_approved, is_suspended")
         .eq("id", user.id)
         .maybeSingle();
+
+      if (profile?.is_suspended === true) {
+        alert("[시스템] 제재 상태에서는 게시글 작성이 제한됩니다.");
+        setLocation("/pending");
+        return;
+      }
 
       if (profile?.is_approved !== true) {
         alert("[시스템] 관리자 승인 후 게시글 작성이 가능합니다.");

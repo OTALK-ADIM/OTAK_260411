@@ -8,6 +8,7 @@ export default function Profile() {
   const [myPosts, setMyPosts] = useState<any[]>([]);
   const [myComments, setMyComments] = useState<any[]>([]);
   const [savedPosts, setSavedPosts] = useState<any[]>([]);
+  const [blockedUsers, setBlockedUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -36,6 +37,27 @@ export default function Profile() {
     setSavedPosts(saves.map((s: any) => ({ ...postsMap[s.post_id], saved_at: s.created_at })).filter((p: any) => p.id));
   };
 
+  const fetchBlockedUsers = async (userId: string) => {
+    const { data: blocks } = await supabase
+      .from("user_blocks")
+      .select("blocked_id, created_at")
+      .eq("blocker_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (!blocks || blocks.length === 0) {
+      setBlockedUsers([]);
+      return;
+    }
+
+    const ids = blocks.map((b: any) => b.blocked_id);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, nickname")
+      .in("id", ids);
+    const map = profiles?.reduce((acc: any, p: any) => ({ ...acc, [p.id]: p.nickname }), {}) || {};
+    setBlockedUsers(blocks.map((b: any) => ({ ...b, nickname: map[b.blocked_id] || "UNKNOWN" })));
+  };
+
   const fetchMyData = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -62,6 +84,7 @@ export default function Profile() {
     if (commentsData) setMyComments(commentsData);
 
     await fetchSavedPosts(user.id);
+    await fetchBlockedUsers(user.id);
     setLoading(false);
   };
 
@@ -111,6 +134,22 @@ export default function Profile() {
     } catch (error: any) {
       alert(`[에러] 삭제 실패: ${error.message}`);
     }
+  };
+
+  const handleUnblockUser = async (blockedId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    if (!confirm("이 유저의 차단을 해제하시겠습니까?")) return;
+    const { error } = await supabase
+      .from("user_blocks")
+      .delete()
+      .eq("blocker_id", user.id)
+      .eq("blocked_id", blockedId);
+    if (error) {
+      alert(`[에러] 차단 해제 실패: ${error.message}`);
+      return;
+    }
+    fetchMyData();
   };
 
   const handleUnsavePost = async (postId: string) => {
@@ -195,6 +234,8 @@ export default function Profile() {
             <span>COMMENTS: <span className="text-green-400">{myComments.length}</span></span>
             <span className="text-green-800">|</span>
             <span>SAVED: <span className="text-green-300">{savedPosts.length}</span></span>
+            <span className="text-green-800">|</span>
+            <span>BLOCKED: <span className="text-red-400">{blockedUsers.length}</span></span>
           </div>
         </div>
       </div>
@@ -216,6 +257,29 @@ export default function Profile() {
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-[10px] text-green-800 font-mono">{new Date(post.saved_at).toLocaleDateString()}</span>
                     <button onClick={() => handleUnsavePost(post.id)} className="border border-green-900 bg-black px-1 py-0.5 text-[9px] text-green-300 hover:bg-green-500 hover:text-black font-bold transition-none">UNSAVE</button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-bold mb-1 tracking-tighter flex items-center bg-black inline-block pr-2">
+            <span className="text-red-500 mr-2">!</span> BLOCKED_USERS
+          </h3>
+          <div className="border-2 border-red-900/60 bg-black">
+            {blockedUsers.length === 0 ? (
+              <div className="p-6 text-center text-red-900/70 text-xs font-bold tracking-widest">NO_BLOCKED_USERS</div>
+            ) : (
+              blockedUsers.map(block => (
+                <div key={block.blocked_id} className="flex justify-between items-center border-b border-red-900/40 p-2 hover:bg-red-950/20 transition-none">
+                  <div className="flex-grow cursor-pointer text-red-300 text-sm font-bold truncate pr-2" onClick={() => setLocation(`/profile/${block.blocked_id}`)}>
+                    @{block.nickname}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] text-red-800 font-mono">{new Date(block.created_at).toLocaleDateString()}</span>
+                    <button onClick={() => handleUnblockUser(block.blocked_id)} className="border border-red-900 bg-black px-1 py-0.5 text-[9px] text-red-300 hover:bg-red-500 hover:text-black font-bold transition-none">UNBLOCK</button>
                   </div>
                 </div>
               ))
