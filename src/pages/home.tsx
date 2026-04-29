@@ -67,7 +67,7 @@ export default function Home() {
       <style>{`
         .nuke-start-container { display: flex; flex-direction: column; align-items: center; margin-top: 6rem; gap: 4rem; padding: 0 1rem; }
         .nuke-warning-text { color: #22c55e; letter-spacing: 0.15em; font-weight: bold; text-align: center; line-height: 2.5; font-size: 1rem; }
-        .nuke-start-btn { border: 2px solid #22c55e; background-color: black; color: #4ade80; padding: clamp(1rem, 4vw, 1.5rem) clamp(2rem, 12vw, 5rem); font-size: clamp(1.1rem, 6vw, 1.5rem); letter-spacing: clamp(0.16em, 1.8vw, 0.4em); font-weight: bold; cursor: pointer; box-shadow: 0 0 15px rgba(34, 197, 94, 0.4); white-space: nowrap; max-width: 100%; box-sizing: border-box; }
+        .nuke-start-btn { border: 2px solid #22c55e; background-color: black; color: #4ade80; padding: 1.5rem 5rem; font-size: 1.5rem; letter-spacing: 0.4em; font-weight: bold; cursor: pointer; box-shadow: 0 0 15px rgba(34, 197, 94, 0.4); }
         .nuke-start-btn:hover { background-color: #22c55e; color: black; }
         .nuke-menu-container { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; width: 100%; max-width: 40rem; margin-left: auto; margin-right: auto; padding: 0 1.5rem; }
         .nuke-menu-item { font-size: 1.2rem; padding: 1rem 0; cursor: pointer; display: flex; align-items: center; text-align: left; color: #22c55e; font-weight: bold; border-bottom: 1px dashed #064e3b; }
@@ -76,7 +76,7 @@ export default function Home() {
         @media (min-width: 768px) {
           .nuke-start-container { margin-top: 8rem; gap: 5rem; }
           .nuke-warning-text { font-size: 1.2rem; }
-          .nuke-start-btn { padding: 2rem 6rem; font-size: 2rem; letter-spacing: 0.4em; }
+          .nuke-start-btn { padding: 2rem 6rem; font-size: 2rem; }
           .nuke-menu-container { gap: 2rem; margin-top: 3rem; padding: 0; }
           .nuke-menu-item { font-size: 1.5rem; padding: 1.2rem 0; }
         }
@@ -133,8 +133,9 @@ export default function Home() {
 
           <div onClick={() => setLocation("/rules")} className="nuke-menu-item group"><span className="nuke-menu-icon">▶</span> 0. NERD_PROTOCOL</div>
           <div onClick={() => setLocation("/feed")} className="nuke-menu-item group"><span className="nuke-menu-icon">▶</span> 1. 지하 통신망 피드</div>
-          <div onClick={() => setLocation("/chat-list")} className="nuke-menu-item group"><span className="nuke-menu-icon">▶</span> 2. 대화함</div>
-          <div onClick={() => setLocation("/profile")} className="nuke-menu-item group"><span className="nuke-menu-icon">▶</span> 3. 나의 데이터</div>
+          <div onClick={() => setLocation("/discussion")} className="nuke-menu-item group"><span className="nuke-menu-icon">▶</span> 2. 오늘의 토론</div>
+          <div onClick={() => setLocation("/chat-list")} className="nuke-menu-item group"><span className="nuke-menu-icon">▶</span> 3. 대화함</div>
+          <div onClick={() => setLocation("/profile")} className="nuke-menu-item group"><span className="nuke-menu-icon">▶</span> 4. 나의 데이터</div>
         </div>
       )}
     </div>

@@ -19,12 +19,13 @@ import PublicProfile from "./pages/public-profile";
 import Onboarding from "./pages/onboarding";
 import OpenChatRoom from "./pages/open-chat-room";
 import Pending from "./pages/pending";
+import DailyDiscussion from "./pages/daily-discussion";
 
 type AuthState = "LOADING" | "UNAUTH" | "ONBOARDING" | "PENDING" | "SUSPENDED" | "APPROVED";
 
 const UNAUTH_ALLOWED_PATHS = ["/", "/login", "/signup", "/rules"];
-const PENDING_ALLOWED_PATHS = ["/", "/pending", "/profile", "/feed", "/rules"];
-const SUSPENDED_ALLOWED_PATHS = ["/", "/pending", "/profile", "/feed", "/rules"];
+const PENDING_ALLOWED_PATHS = ["/", "/pending", "/profile", "/feed", "/discussion", "/rules"];
+const SUSPENDED_ALLOWED_PATHS = ["/", "/pending", "/profile", "/feed", "/discussion", "/rules"];
 const isPendingAllowedPath = (path: string) => (
   PENDING_ALLOWED_PATHS.includes(path)
   || path.startsWith("/post/")
@@ -50,6 +51,7 @@ export default function App() {
     if (path === "/onboarding") return "ONBOARDING_PROCESS";
     if (path === "/pending") return "ACCESS_PENDING";
     if (path === "/feed") return "DATA_FEED";
+    if (path === "/discussion") return "DAILY_DISCUSSION";
     if (path === "/profile") return "MY_ARCHIVE";
     if (path === "/write") return "DATA_ENTRY";
     if (path === "/chat-list") return "SECURE_COMMS";
@@ -157,7 +159,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-black px-4 pt-4 pb-12 font-mono text-green-500 selection:bg-green-500 selection:text-black">
-      <div className="w-full max-w-[800px] flex flex-col min-h-screen">
+      <div
+        className="w-full max-w-[800px] flex flex-col min-h-screen"
+        style={user ? { zoom: 1.1 } as any : undefined}
+      >
         <header className="w-full flex flex-col mb-4 md:mb-8">
           <div className="w-full border border-green-500 py-2 px-1 flex justify-center items-center bg-black mb-3 overflow-hidden">
             <span className="text-green-500 text-[clamp(10px,2.7vw,16px)] tracking-[clamp(0.06em,1.2vw,0.5em)] font-bold whitespace-nowrap leading-none">
@@ -238,6 +243,7 @@ export default function App() {
               <Route path="/" component={Home} />
               <Route path="/pending" component={Pending} />
               <Route path="/feed" component={Feed} />
+              <Route path="/discussion" component={DailyDiscussion} />
               <Route path="/post/:id" component={PostDetail} />
               <Route path="/profile" component={Profile} />
               <Route path="/profile/:userId" component={PublicProfile} />
@@ -250,6 +256,7 @@ export default function App() {
               <Route path="/" component={Home} />
               <Route path="/pending" component={Pending} />
               <Route path="/feed" component={Feed} />
+              <Route path="/discussion" component={DailyDiscussion} />
               <Route path="/post/:id" component={PostDetail} />
               <Route path="/profile" component={Profile} />
               <Route path="/profile/:userId" component={PublicProfile} />
@@ -262,6 +269,7 @@ export default function App() {
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/feed" component={Feed} />
+              <Route path="/discussion" component={DailyDiscussion} />
               <Route path="/profile" component={Profile} />
               <Route path="/write" component={WritePost} />
               <Route path="/post/:id" component={PostDetail} />
@@ -278,7 +286,7 @@ export default function App() {
         </main>
 
         <footer className="w-full border-t border-green-900/50 pt-4 mt-20 text-center text-xs text-green-800">
-          V. 1.10.0 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
+          V. 1.11.0 - AT 2400bps - SYSTEM: WAITING FOR USER INPUT...
         </footer>
       </div>
     </div>

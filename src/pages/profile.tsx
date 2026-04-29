@@ -12,6 +12,7 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isBlockListOpen, setIsBlockListOpen] = useState(false);
   const [editNickname, setEditNickname] = useState("");
   const [editBio, setEditBio] = useState("");
 
@@ -173,7 +174,7 @@ export default function Profile() {
   return (
     <div className="w-full flex flex-col font-mono mt-4 md:mt-8 px-2 md:px-0 pb-20 text-green-500">
       <div className="flex justify-between items-end mb-4 border-b-2 border-dashed border-green-900 pb-2">
-        <h2 className="text-lg md:text-2xl font-bold tracking-widest">[ MY_PROFILE_v1.4 ]</h2>
+        <h2 className="text-lg md:text-2xl font-bold tracking-widest">[ MY_PROFILE_v1.5 ]</h2>
         <button
           onClick={() => isEditing ? handleUpdateProfile() : setIsEditing(true)}
           className="border border-green-500 bg-black text-green-500 px-2 py-1 text-[10px] md:text-xs hover:bg-green-500 hover:text-black font-bold uppercase transition-none"
@@ -182,7 +183,7 @@ export default function Profile() {
         </button>
       </div>
 
-      <div className="flex flex-row gap-2 mb-8 items-stretch h-auto">
+      <div className="flex flex-row gap-2 mb-10 items-stretch h-auto">
         <div className="w-[48%] aspect-square border-2 border-green-500 bg-green-950/20 relative shrink-0">
           {profile?.imageUrl ? (
             <img src={profile.imageUrl} alt="Profile" className="w-full h-full object-cover grayscale opacity-80" />
@@ -240,9 +241,9 @@ export default function Profile() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-8">
-        <div>
-          <h3 className="text-lg font-bold mb-1 tracking-tighter flex items-center bg-black inline-block pr-2">
+      <div className="flex flex-col gap-12">
+        <section>
+          <h3 className="text-lg font-bold mb-3 tracking-tighter flex items-center bg-black inline-block pr-2">
             <span className="text-green-300 mr-2">★</span> SAVED_TRANSMISSIONS
           </h3>
           <div className="border-2 border-green-900/70 bg-black">
@@ -250,45 +251,22 @@ export default function Profile() {
               <div className="p-6 text-center text-green-900/70 text-xs font-bold tracking-widest">NO_SAVED_DATA_FOUND</div>
             ) : (
               savedPosts.map(post => (
-                <div key={post.id} className="flex justify-between items-center border-b border-green-900/40 p-2 hover:bg-green-950/20 transition-none">
+                <div key={post.id} className="flex justify-between items-center border-b border-green-900/40 p-3 hover:bg-green-950/20 transition-none">
                   <div className="flex-grow cursor-pointer text-green-300 text-sm font-bold truncate pr-2" onClick={() => setLocation(`/post/${post.id}`)}>
                     <span className="text-[10px] text-green-700 mr-1 font-normal">[{post.category || "일반"}]</span>{post.title}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-[10px] text-green-800 font-mono">{new Date(post.saved_at).toLocaleDateString()}</span>
-                    <button onClick={() => handleUnsavePost(post.id)} className="border border-green-900 bg-black px-1 py-0.5 text-[9px] text-green-300 hover:bg-green-500 hover:text-black font-bold transition-none">UNSAVE</button>
+                    <button onClick={() => handleUnsavePost(post.id)} className="border border-green-900 bg-black px-2 py-1 text-[9px] text-green-300 hover:bg-green-500 hover:text-black font-bold transition-none">UNSAVE</button>
                   </div>
                 </div>
               ))
             )}
           </div>
-        </div>
+        </section>
 
-        <div>
-          <h3 className="text-lg font-bold mb-1 tracking-tighter flex items-center bg-black inline-block pr-2">
-            <span className="text-red-500 mr-2">!</span> BLOCKED_USERS
-          </h3>
-          <div className="border-2 border-red-900/60 bg-black">
-            {blockedUsers.length === 0 ? (
-              <div className="p-6 text-center text-red-900/70 text-xs font-bold tracking-widest">NO_BLOCKED_USERS</div>
-            ) : (
-              blockedUsers.map(block => (
-                <div key={block.blocked_id} className="flex justify-between items-center border-b border-red-900/40 p-2 hover:bg-red-950/20 transition-none">
-                  <div className="flex-grow cursor-pointer text-red-300 text-sm font-bold truncate pr-2" onClick={() => setLocation(`/profile/${block.blocked_id}`)}>
-                    @{block.nickname}
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[10px] text-red-800 font-mono">{new Date(block.created_at).toLocaleDateString()}</span>
-                    <button onClick={() => handleUnblockUser(block.blocked_id)} className="border border-red-900 bg-black px-1 py-0.5 text-[9px] text-red-300 hover:bg-red-500 hover:text-black font-bold transition-none">UNBLOCK</button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="text-lg font-bold mb-1 tracking-tighter flex items-center bg-black inline-block pr-2">
+        <section>
+          <h3 className="text-lg font-bold mb-3 tracking-tighter flex items-center bg-black inline-block pr-2">
             <span className="text-green-500 mr-2">&gt;</span> DATA_POSTING_LOG
           </h3>
           <div className="border-2 border-green-900 bg-black">
@@ -296,22 +274,22 @@ export default function Profile() {
               <div className="p-6 text-center text-green-900 text-xs font-bold tracking-widest">NO_LOG_DATA_FOUND</div>
             ) : (
               myPosts.map(post => (
-                <div key={post.id} className="flex justify-between items-center border-b border-green-900 p-2 hover:bg-green-950/30 transition-none">
+                <div key={post.id} className="flex justify-between items-center border-b border-green-900 p-3 hover:bg-green-950/30 transition-none">
                   <div className="flex-grow cursor-pointer text-green-400 text-sm font-bold truncate pr-2" onClick={() => setLocation(`/post/${post.id}`)}>
                     <span className="text-[10px] text-green-700 mr-1 font-normal">[{post.category}]</span>{post.title}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-[10px] text-green-800 font-mono">{new Date(post.created_at).toLocaleDateString()}</span>
-                    <button onClick={() => handleDeletePost(post.id)} className="border border-green-900 bg-black px-1 py-0.5 text-[9px] text-red-500 hover:bg-green-500 hover:text-black font-bold transition-none">DEL</button>
+                    <button onClick={() => handleDeletePost(post.id)} className="border border-green-900 bg-black px-2 py-1 text-[9px] text-red-500 hover:bg-green-500 hover:text-black font-bold transition-none">DEL</button>
                   </div>
                 </div>
               ))
             )}
           </div>
-        </div>
+        </section>
 
-        <div>
-          <h3 className="text-lg font-bold mb-1 tracking-tighter flex items-center bg-black inline-block pr-2">
+        <section>
+          <h3 className="text-lg font-bold mb-3 tracking-tighter flex items-center bg-black inline-block pr-2">
             <span className="text-green-500 mr-2">&gt;</span> RECENT_COMMENTS_LOG
           </h3>
           <div className="border-2 border-green-900 bg-black">
@@ -319,19 +297,49 @@ export default function Profile() {
               <div className="p-6 text-center text-green-900 text-xs font-bold tracking-widest">NO_LOG_DATA_FOUND</div>
             ) : (
               myComments.map(comment => (
-                <div key={comment.id} className="flex justify-between items-center border-b border-green-900 p-2 hover:bg-green-950/30 transition-none">
+                <div key={comment.id} className="flex justify-between items-center border-b border-green-900 p-3 hover:bg-green-950/30 transition-none">
                   <div className="flex-grow cursor-pointer text-green-500 text-sm truncate pr-2" onClick={() => setLocation(`/post/${comment.post_id}`)}>
                     "{comment.content}"
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-[10px] text-green-800 font-mono">{new Date(comment.created_at).toLocaleDateString()}</span>
-                    <button onClick={() => handleDeleteComment(comment.id)} className="border border-green-900 bg-black px-1 py-0.5 text-[9px] text-red-500 hover:bg-green-500 hover:text-black font-bold transition-none">DEL</button>
+                    <button onClick={() => handleDeleteComment(comment.id)} className="border border-green-900 bg-black px-2 py-1 text-[9px] text-red-500 hover:bg-green-500 hover:text-black font-bold transition-none">DEL</button>
                   </div>
                 </div>
               ))
             )}
           </div>
-        </div>
+        </section>
+
+        <section className="pt-4 border-t border-red-900/40">
+          <button
+            type="button"
+            onClick={() => setIsBlockListOpen(!isBlockListOpen)}
+            className="w-full border-2 border-red-900/60 bg-black px-4 py-3 text-left text-red-400 hover:bg-red-950/20 font-bold tracking-widest transition-none flex justify-between items-center"
+          >
+            <span><span className="text-red-500 mr-2">!</span> BLOCKED_USERS <span className="text-red-800">({blockedUsers.length})</span></span>
+            <span className="text-red-700">{isBlockListOpen ? "[ CLOSE ]" : "[ OPEN ]"}</span>
+          </button>
+          {isBlockListOpen && (
+            <div className="border-x-2 border-b-2 border-red-900/60 bg-black">
+              {blockedUsers.length === 0 ? (
+                <div className="p-6 text-center text-red-900/70 text-xs font-bold tracking-widest">NO_BLOCKED_USERS</div>
+              ) : (
+                blockedUsers.map(block => (
+                  <div key={block.blocked_id} className="flex justify-between items-center border-b border-red-900/40 p-3 hover:bg-red-950/20 transition-none">
+                    <div className="flex-grow cursor-pointer text-red-300 text-sm font-bold truncate pr-2" onClick={() => setLocation(`/profile/${block.blocked_id}`)}>
+                      @{block.nickname}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] text-red-800 font-mono">{new Date(block.created_at).toLocaleDateString()}</span>
+                      <button onClick={() => handleUnblockUser(block.blocked_id)} className="border border-red-900 bg-black px-2 py-1 text-[9px] text-red-300 hover:bg-red-500 hover:text-black font-bold transition-none">UNBLOCK</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
