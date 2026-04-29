@@ -194,7 +194,7 @@ export default function Profile() {
             <span className="text-green-800">|</span>
             <span>COMMENTS: <span className="text-green-400">{myComments.length}</span></span>
             <span className="text-green-800">|</span>
-            <span>SAVED: <span className="text-yellow-400">{savedPosts.length}</span></span>
+            <span>SAVED: <span className="text-green-300">{savedPosts.length}</span></span>
           </div>
         </div>
       </div>
@@ -202,20 +202,20 @@ export default function Profile() {
       <div className="flex flex-col gap-8">
         <div>
           <h3 className="text-lg font-bold mb-1 tracking-tighter flex items-center bg-black inline-block pr-2">
-            <span className="text-yellow-500 mr-2">★</span> SAVED_TRANSMISSIONS
+            <span className="text-green-300 mr-2">★</span> SAVED_TRANSMISSIONS
           </h3>
-          <div className="border-2 border-yellow-900/70 bg-black">
+          <div className="border-2 border-green-900/70 bg-black">
             {savedPosts.length === 0 ? (
-              <div className="p-6 text-center text-yellow-900/70 text-xs font-bold tracking-widest">NO_SAVED_DATA_FOUND</div>
+              <div className="p-6 text-center text-green-900/70 text-xs font-bold tracking-widest">NO_SAVED_DATA_FOUND</div>
             ) : (
               savedPosts.map(post => (
-                <div key={post.id} className="flex justify-between items-center border-b border-yellow-900/40 p-2 hover:bg-yellow-950/20 transition-none">
-                  <div className="flex-grow cursor-pointer text-yellow-400 text-sm font-bold truncate pr-2" onClick={() => setLocation(`/post/${post.id}`)}>
-                    <span className="text-[10px] text-yellow-700 mr-1 font-normal">[{post.category || "일반"}]</span>{post.title}
+                <div key={post.id} className="flex justify-between items-center border-b border-green-900/40 p-2 hover:bg-green-950/20 transition-none">
+                  <div className="flex-grow cursor-pointer text-green-300 text-sm font-bold truncate pr-2" onClick={() => setLocation(`/post/${post.id}`)}>
+                    <span className="text-[10px] text-green-700 mr-1 font-normal">[{post.category || "일반"}]</span>{post.title}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[10px] text-yellow-800 font-mono">{new Date(post.saved_at).toLocaleDateString()}</span>
-                    <button onClick={() => handleUnsavePost(post.id)} className="border border-yellow-900 bg-black px-1 py-0.5 text-[9px] text-yellow-500 hover:bg-yellow-500 hover:text-black font-bold transition-none">UNSAVE</button>
+                    <span className="text-[10px] text-green-800 font-mono">{new Date(post.saved_at).toLocaleDateString()}</span>
+                    <button onClick={() => handleUnsavePost(post.id)} className="border border-green-900 bg-black px-1 py-0.5 text-[9px] text-green-300 hover:bg-green-500 hover:text-black font-bold transition-none">UNSAVE</button>
                   </div>
                 </div>
               ))

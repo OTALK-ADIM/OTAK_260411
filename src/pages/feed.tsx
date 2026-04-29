@@ -71,7 +71,12 @@ export default function Feed() {
         setSavedPostIds(prev => [...prev, postId]);
       }
     } catch (error: any) {
-      alert(`[ERROR] 저장 처리 실패: ${error.message}`);
+      const msg = String(error?.message || "");
+      if (msg.includes("post_saves") || msg.includes("schema cache")) {
+        alert("[ERROR] 저장 기능 DB 테이블이 아직 생성되지 않았습니다. Supabase SQL Editor에서 supabase_required.sql을 먼저 실행한 뒤 Vercel을 새로고침해 주세요.");
+      } else {
+        alert("[ERROR] 저장 처리 실패: " + error.message);
+      }
     } finally {
       setSavingPostId(null);
     }
@@ -79,6 +84,21 @@ export default function Feed() {
 
   return (
     <div className="w-full flex flex-col gap-6 font-mono pb-20">
+      <style>{`
+        .otalk-save-btn {
+          -webkit-appearance: none;
+          appearance: none;
+          border-radius: 0;
+          background-color: #000000;
+          color: #16a34a;
+        }
+        .otalk-save-btn.saved {
+          background-color: rgba(34, 197, 94, 0.16);
+          color: #86efac;
+          border-color: #4ade80;
+          box-shadow: 0 0 8px rgba(34, 197, 94, 0.25);
+        }
+      `}</style>
       <div className="flex justify-between items-end px-2 mt-4 md:mt-8 mb-4 border-b-2 border-green-900 pb-4">
         <div className="text-xl md:text-3xl font-bold text-green-500 tracking-tighter">
           [ COMM_FEED ]
@@ -127,9 +147,10 @@ export default function Feed() {
                 </div>
                 <div className="flex justify-between md:justify-end items-center md:w-64 mt-3 md:mt-0 shrink-0 gap-2">
                   <button
+                    type="button"
                     onClick={(e) => handleToggleSave(e, post.id)}
                     disabled={!currentUser || savingPostId === post.id}
-                    className={`${saved ? "border-yellow-500 bg-yellow-500 text-black" : "border-yellow-700 text-yellow-500 bg-yellow-950/10"} text-[10px] md:text-xs font-bold px-2 py-1 border hover:bg-yellow-500 hover:text-black disabled:opacity-40 disabled:cursor-not-allowed`}
+                    className={`otalk-save-btn ${saved ? "saved" : ""} text-[10px] md:text-xs font-bold px-2 py-1 border border-green-800 hover:border-green-400 hover:bg-green-500/20 hover:text-green-200 disabled:opacity-40 disabled:cursor-not-allowed transition-none`}
                   >
                     {savingPostId === post.id ? "..." : saved ? "★ SAVED" : "☆ SAVE"}
                   </button>

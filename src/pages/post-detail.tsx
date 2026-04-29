@@ -109,7 +109,12 @@ export default function PostDetail() {
         setIsSaved(true);
       }
     } catch (error: any) {
-      alert(`[ERROR] 저장 처리 실패: ${error.message}`);
+      const msg = String(error?.message || "");
+      if (msg.includes("post_saves") || msg.includes("schema cache")) {
+        alert("[ERROR] 저장 기능 DB 테이블이 아직 생성되지 않았습니다. Supabase SQL Editor에서 supabase_required.sql을 먼저 실행한 뒤 Vercel을 새로고침해 주세요.");
+      } else {
+        alert("[ERROR] 저장 처리 실패: " + error.message);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -182,14 +187,30 @@ export default function PostDetail() {
 
   return (
     <div className="w-full flex flex-col font-mono mt-4 md:mt-8 px-2 md:px-0 pb-32">
+      <style>{`
+        .otalk-save-btn {
+          -webkit-appearance: none;
+          appearance: none;
+          border-radius: 0;
+          background-color: #000000;
+          color: #16a34a;
+        }
+        .otalk-save-btn.saved {
+          background-color: rgba(34, 197, 94, 0.16);
+          color: #86efac;
+          border-color: #4ade80;
+          box-shadow: 0 0 8px rgba(34, 197, 94, 0.25);
+        }
+      `}</style>
       <div className="w-full border-b-2 border-green-900 pb-6 mb-10">
         <div className="flex justify-between items-start mb-4 gap-2">
           <div className="text-green-700 text-xs font-bold tracking-widest">&gt; CATEGORY: [{post.category || "GENERAL"}]</div>
           <div className="flex gap-2 shrink-0 flex-wrap justify-end">
             <button
+              type="button"
               onClick={handleToggleSave}
               disabled={!currentUser || isSaving}
-              className={`${isSaved ? "border-yellow-500 bg-yellow-500 text-black" : "border-yellow-700 bg-yellow-950/20 text-yellow-500"} border px-3 py-1 cursor-pointer hover:bg-yellow-500 hover:text-black font-bold text-[10px] tracking-widest disabled:opacity-40 disabled:cursor-not-allowed`}
+              className={`otalk-save-btn ${isSaved ? "saved" : ""} border border-green-800 px-3 py-1 cursor-pointer hover:border-green-400 hover:bg-green-500/20 hover:text-green-200 font-bold text-[10px] tracking-widest disabled:opacity-40 disabled:cursor-not-allowed transition-none`}
             >
               {isSaving ? "[ ... ]" : isSaved ? "[ ★ SAVED ]" : "[ ☆ SAVE ]"}
             </button>

@@ -35,10 +35,24 @@ export default function Login() {
           margin-top: 1rem;
         }
         .login-btn {
-          border: 2px solid #22c55e; background-color: black; color: #4ade80;
-          padding: 1.2rem 2.5rem; font-size: 1.3rem; font-weight: bold;
-          cursor: pointer; transition: all 0.2s; letter-spacing: 0.1em;
+          border: 2px solid #22c55e;
+          background-color: black;
+          color: #4ade80;
+          padding: clamp(0.85rem, 3vw, 1.5rem) clamp(0.6rem, 4vw, 4rem);
+          font-size: clamp(0.7rem, 3.05vw, 1.6rem);
+          font-weight: bold;
+          cursor: pointer;
+          transition: all 0.2s;
+          letter-spacing: clamp(0em, 0.32vw, 0.1em);
           box-shadow: 0 0 10px rgba(34, 197, 94, 0.2);
+          white-space: nowrap;
+          width: min(100%, 24rem);
+          text-align: center;
+          overflow: hidden;
+          box-sizing: border-box;
+          -webkit-text-size-adjust: 100%;
+          -webkit-appearance: none;
+          appearance: none;
         }
         .login-btn:hover { background-color: #22c55e; color: black; box-shadow: 0 0 20px rgba(34, 197, 94, 0.6); }
         .login-logs {
@@ -49,7 +63,7 @@ export default function Login() {
           .login-container { gap: 4rem; }
           .login-warning { font-size: 1.3rem; }
           .login-notice { font-size: 1.2rem; }
-          .login-btn { padding: 1.5rem 4rem; font-size: 1.6rem; }
+          .login-btn { width: auto; min-width: 22rem; max-width: 100%; }
           .login-logs { font-size: 0.85rem; margin-top: 4rem; }
         }
       `}</style>
